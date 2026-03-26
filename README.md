@@ -1,213 +1,76 @@
-# 📦 Inventra — Smart Inventory & Reservation Management System
+# Stock Reservation System — Inventra
 
-## 🚀 Overview
+## Quick Start
 
-**Inventra** is a modern inventory and reservation management platform designed to handle real-time stock tracking, safe reservation workflows, and scalable business operations.
+1. Clone the repo
+2. Run: `docker-compose up --build`
+3. Open: http://localhost:3000
+4. Login with: username=`admin` password=`admin123`
 
-The system ensures that inventory is never oversold by implementing **concurrency-safe stock locking**, automated reservation handling, and real-time availability tracking.
-
-Inventra is built using a **scalable full-stack architecture** with a Next.js frontend and a NestJS backend, making it production-ready and easy to extend.
-
----
-
-## ✨ Core Features
-
-### ✅ Inventory Management
-
-* Create and manage inventory listings
-* Track total, reserved, and available stock
-* Update inventory dynamically
-* Structured item categorization
-
-### 🔄 Real-Time Stock Tracking
-
-* Live calculation of:
-
-  * Total Stock
-  * Reserved Stock
-  * Available Stock
-* Prevents overselling scenarios
-
-### 🧾 Reservation System
-
-* Reservation creation and validation
-* Concurrency-safe stock locking
-* Reservation confirmation workflow
-* Reservation cancellation workflow
-* Automatic expiration of unused reservations
-
-### 🔐 Reliability & Safety
-
-* Atomic inventory updates
-* Backend validation layer
-* Scalable service-based architecture
-* Audit logging for tracking system actions
-
----
-
-## 🏗️ Tech Stack
-
-### Frontend
-
-* **Next.js**
-* React + TypeScript
-* Tailwind CSS
-* Server Side Rendering (SSR)
-* API Integration
-
-### Backend
-
-* **NestJS**
-* Node.js
-* TypeScript
-* REST APIs
-* Dependency Injection Architecture
-
-### Database & Storage
-
-* MongoDB
-* Cloudinary (image storage)
-* Multer (file uploads)
-
----
-
-## 🧩 System Architecture
+## Architecture
 
 ```
-Next.js (Frontend)
-        ↓
- REST API Communication
-        ↓
-NestJS Backend (Controllers → Services → Database)
-        ↓
-MongoDB Database
+Frontend (Next.js 14)  →  NestJS API Gateway  →  Go Reservation Service
+                                    ↓                       ↓
+                               PostgreSQL 15           PostgreSQL 15
+                             (reads: inventory)   (writes: all stock ops)
 ```
 
-### Backend Structure
+- **Frontend**: http://localhost:3000
+- **NestJS API**: http://localhost:3001
+- **Go Service**: http://localhost:8081
+- **PostgreSQL**: localhost:5432
 
-* **Controllers** → Handle incoming requests
-* **Services** → Business logic
-* **Modules** → Feature separation
-* **DTOs** → Data validation
-* **Guards & Middleware** → Security & validation
+## Services
 
----
+| Service | Port | Responsibility |
+|---------|------|---------------|
+| Next.js Frontend | 3000 | UI — no business logic |
+| NestJS Backend | 3001 | Auth, routing, inventory reads |
+| Go Reservation Service | 8081 | All stock mutations (concurrency-safe) |
+| PostgreSQL 15 | 5432 | Data store |
 
-## ⚙️ Installation & Setup
+## API Endpoints (NestJS)
 
-### 1️⃣ Clone Repository
+```
+POST   /auth/login
+GET    /inventory
+POST   /inventory        (admin)
+PUT    /inventory/:id    (admin)
+DELETE /inventory/:id    (admin)
+POST   /reservation
+POST   /reservation/confirm
+POST   /reservation/cancel
+GET    /reservation/user
+```
+
+## Internal Go Service Endpoints
+
+```
+POST /reserve
+POST /confirm
+POST /cancel
+GET  /reservations/user/:userID
+GET  /health
+```
+
+## Key Design Decisions
+
+- **SELECT FOR UPDATE**: All stock mutations in Go use row-level locking to prevent overselling under concurrent load.
+- **Generated column**: `available_quantity` is a PostgreSQL generated column — never manually updated.
+- **Expiry worker**: A cron job runs every 60 seconds to expire stale PENDING reservations and release their stock.
+- **JWT**: 24-hour token expiry. Seeded admin password is bcrypt-hashed.
+- **No stock logic in NestJS**: NestJS only proxies reservation calls to the Go service.
+
+## Development
 
 ```bash
-git clone https://github.com/your-username/inventra.git
-cd inventra
+# Backend only
+cd backend && npm install && npm run start:dev
+
+# Go service only
+cd reservation-service && go run .
+
+# Frontend only
+cd frontend && npm install && npm run dev
 ```
-
----
-
-### 2️⃣ Setup Backend (NestJS)
-
-```bash
-cd backend
-npm install
-npm run start:dev
-```
-
-Backend runs on:
-
-```
-http://localhost:3001
-```
-
----
-
-### 3️⃣ Setup Frontend (Next.js)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs on:
-
-```
-http://localhost:3000
-```
-
----
-
-## 🔑 Environment Variables
-
-Create `.env` file inside backend:
-
-```env
-PORT=3001
-MONGO_URI=your_mongodb_connection
-CLOUDINARY_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_SECRET=your_secret
-```
-
----
-
-## 🔄 Reservation Workflow
-
-1. User selects inventory item
-2. System checks available stock
-3. Stock is temporarily locked
-4. Reservation created
-5. User confirms or cancels
-6. If expired → stock automatically released
-
----
-
-## 📋 Audit Log (Concept)
-
-Inventra records important system actions such as:
-
-* Inventory updates
-* Reservation creation/cancellation
-* Stock changes
-* Expiration events
-
-This improves debugging, monitoring, and accountability.
-
----
-
-## 📈 Future Improvements
-
-* Authentication & Role-Based Access
-* Dashboard analytics
-* WebSocket real-time updates
-* Payment integration
-* Notification system
-* Microservice architecture
-
----
-
-## 📸 Screenshots
-
-*Add UI screenshots here*
-
----
-
-## 🤝 Contribution
-
-Contributions are welcome!
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Open a Pull Request
-
----
-
-## 📄 License
-
-MIT License © Inventra
-
----
-
-## 💡 Author
-
-Built with ❤️ to create a scalable and reliable inventory system.
