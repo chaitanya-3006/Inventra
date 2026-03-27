@@ -42,7 +42,7 @@ export default function ReservationsPage() {
     }
     setUser(getUser());
     fetchAll();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const fetchAll = async () => {
@@ -66,7 +66,7 @@ export default function ReservationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Nav */}
+
       <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -2,26 +2,54 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { login } from '../../lib/api';
+import { login, register } from '../../lib/api';
 import { saveToken } from '../../lib/auth';
+
+type Tab = 'signin' | 'register';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const resetForm = (nextTab: Tab) => {
+    setTab(nextTab);
+    setUsername('');
+    setPassword('');
+    setConfirmPassword('');
+    setError('');
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (tab === 'register') {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const res = await login(username, password);
+      const res = tab === 'signin'
+        ? await login(username, password)
+        : await register(username, password);
+
       saveToken(res.data.access_token, res.data.user);
       router.push('/inventory');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -30,9 +58,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-md">
-        {/* Logo / Title */}
+
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4 shadow-lg shadow-brand-600/30">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-4 shadow-lg shadow-indigo-600/30">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
@@ -43,9 +72,36 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-xl font-semibold text-white mb-6">Sign in to your account</h2>
+
+          {/* Tabs */}
+          <div className="flex bg-gray-800 rounded-xl p-1 mb-7">
+            <button
+              type="button"
+              onClick={() => resetForm('signin')}
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                tab === 'signin'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => resetForm('register')}
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                tab === 'register'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Register
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Username */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
                 Username
@@ -56,11 +112,13 @@ export default function LoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
-                placeholder="admin"
+                minLength={tab === 'register' ? 3 : 1}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                placeholder={tab === 'signin' ? 'admin' : 'your-username'}
               />
             </div>
 
+            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                 Password
@@ -71,21 +129,41 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                 placeholder="••••••••"
               />
             </div>
 
+            {/* Confirm Password (register only) */}
+            {tab === 'register' && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+
+            {/* Error */}
             {error && (
               <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm">
                 {error}
               </div>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 disabled:bg-brand-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-brand-600/20 hover:shadow-brand-500/30"
+              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-500/30"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -93,15 +171,25 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Signing in...
+                  {tab === 'signin' ? 'Signing in...' : 'Creating account...'}
                 </span>
-              ) : 'Sign In'}
+              ) : (
+                tab === 'signin' ? 'Sign In' : 'Create Account'
+              )}
             </button>
           </form>
 
-          <p className="text-center text-gray-500 text-sm mt-6">
-            Default: <span className="text-gray-300">admin</span> / <span className="text-gray-300">admin123</span>
-          </p>
+          {/* Hint */}
+          {tab === 'signin' && (
+            <p className="text-center text-gray-500 text-sm mt-6">
+              Default admin: <span className="text-gray-300">admin</span> / <span className="text-gray-300">admin123</span>
+            </p>
+          )}
+          {tab === 'register' && (
+            <p className="text-center text-gray-500 text-sm mt-6">
+              New accounts are created with <span className="text-gray-300">user</span> role.
+            </p>
+          )}
         </div>
       </div>
     </div>

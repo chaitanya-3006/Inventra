@@ -14,4 +14,9 @@ export class UsersService {
   findById(id: string) {
     return this.repo.findOne({ where: { id } });
   }
+
+  create(username: string, passwordHash: string) {
+    const user = this.repo.create({ username, passwordHash, role: 'user' });
+    return this.repo.save(user);
+  }
 }

@@ -53,11 +53,11 @@ CREATE INDEX idx_reservations_status ON reservations(status);
 CREATE INDEX idx_reservations_expires_at ON reservations(expires_at);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
 
--- Seed: default admin user (password: admin123)
+
 INSERT INTO users (username, password_hash, role)
 VALUES ('admin', '$2b$10$rwR60.PCTJNscqXNRbMjwOizdSZsFuP5lI7y08JxzcbW.W4Z1Bggu', 'admin');
 
--- Seed: test inventory
+
 INSERT INTO inventory (sku, name, total_quantity, reserved_quantity)
 VALUES
   ('SKU-001', 'Widget A', 100, 0),

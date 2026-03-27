@@ -18,7 +18,7 @@ func NewReservationRepo() *ReservationRepo {
 	return &ReservationRepo{}
 }
 
-// Reserve performs a concurrency-safe stock allocation using SELECT FOR UPDATE.
+
 func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest) (*models.Reservation, error) {
 	inventoryID, err := uuid.Parse(req.InventoryID)
 	if err != nil {
@@ -35,7 +35,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	}
 	defer tx.Rollback(ctx)
 
-	// Lock the inventory row to prevent concurrent overselling
+
 	var available int
 	err = tx.QueryRow(ctx,
 		`SELECT available_quantity FROM inventory WHERE id = $1 FOR UPDATE`,
@@ -52,7 +52,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 		return nil, fmt.Errorf("insufficient stock: available=%d, requested=%d", available, req.Quantity)
 	}
 
-	// Update reserved_quantity
+
 	_, err = tx.Exec(ctx,
 		`UPDATE inventory SET reserved_quantity = reserved_quantity + $1, updated_at = NOW() WHERE id = $2`,
 		req.Quantity, inventoryID,
@@ -61,7 +61,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 		return nil, err
 	}
 
-	// Create reservation record
+
 	var res models.Reservation
 	err = tx.QueryRow(ctx,
 		`INSERT INTO reservations (inventory_id, user_id, quantity, status, expires_at)
@@ -84,7 +84,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	return &res, nil
 }
 
-// Confirm marks a reservation as CONFIRMED and decrements total stock.
+
 func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uuid.UUID) (*models.Reservation, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
@@ -112,7 +112,7 @@ func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uui
 		return nil, fmt.Errorf("reservation has expired")
 	}
 
-	// Decrease both total_quantity and reserved_quantity (item is consumed)
+
 	_, err = tx.Exec(ctx,
 		`UPDATE inventory
      SET total_quantity = total_quantity - $1,
@@ -141,7 +141,7 @@ func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uui
 	return &res, tx.Commit(ctx)
 }
 
-// Cancel marks a reservation as CANCELLED and releases the reserved stock.
+
 func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid.UUID) (*models.Reservation, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
@@ -190,7 +190,7 @@ func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid
 	return &res, tx.Commit(ctx)
 }
 
-// ExpireReservations finds all expired PENDING reservations and releases their stock.
+
 func (r *ReservationRepo) ExpireReservations(ctx context.Context) (int, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
@@ -245,7 +245,7 @@ func (r *ReservationRepo) ExpireReservations(ctx context.Context) (int, error) {
 	return len(expired), nil
 }
 
-// GetReservationsByUser returns all reservations for a given user.
+
 func (r *ReservationRepo) GetReservationsByUser(ctx context.Context, userID uuid.UUID) ([]models.Reservation, error) {
 	rows, err := db.Pool.Query(ctx,
 		`SELECT id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at

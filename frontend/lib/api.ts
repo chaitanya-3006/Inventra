@@ -17,6 +17,10 @@ export default API;
 export const login = (username: string, password: string) =>
   API.post('/auth/login', { username, password });
 
+export const register = (username: string, password: string) =>
+  API.post('/auth/register', { username, password });
+
+
 export const getInventory = () => API.get('/inventory');
 export const createInventory = (data: { sku: string; name: string; totalQuantity: number }) =>
   API.post('/inventory', data);

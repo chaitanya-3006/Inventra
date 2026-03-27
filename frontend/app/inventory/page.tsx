@@ -30,7 +30,7 @@ export default function InventoryPage() {
     }
     setUser(getUser());
     fetchInventory();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const fetchInventory = async () => {
@@ -53,7 +53,7 @@ export default function InventoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Nav */}
+
       <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export default function InventoryPage() {
         </div>
       </nav>
 
-      {/* Content */}
+
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>

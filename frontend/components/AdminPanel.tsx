@@ -35,13 +35,13 @@ export default function AdminPanel() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Create form
+
   const [newSku, setNewSku] = useState('');
   const [newName, setNewName] = useState('');
   const [newQty, setNewQty] = useState(0);
   const [creating, setCreating] = useState(false);
 
-  // Edit state
+
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editQty, setEditQty] = useState(0);
@@ -62,7 +62,7 @@ export default function AdminPanel() {
       setInventory(invRes.data);
       setAuditLogs(auditRes.data || []);
     } catch {
-      // Audit might 404 if no endpoint; gracefully handle
+
       try {
         const invRes = await getInventory();
         setInventory(invRes.data);
@@ -151,7 +151,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Create Inventory */}
+
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <h2 className="text-white font-semibold text-lg mb-5 flex items-center gap-2">
           <svg className="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,7 +195,7 @@ export default function AdminPanel() {
         </form>
       </div>
 
-      {/* Inventory Management Table */}
+
       <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-800">
           <h2 className="text-white font-semibold text-lg">Inventory Management</h2>
@@ -287,7 +287,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Audit Logs */}
+
       {auditLogs.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-800">
