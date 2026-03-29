@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
@@ -10,8 +10,25 @@ export class InventoryController {
   constructor(private inventoryService: InventoryService) {}
 
   @Get()
-  findAll() {
-    return this.inventoryService.findAll();
+  async findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+  ) {
+    const pageNum = page ? Number(page) : 1;
+    const limitNum = limit ? Number(limit) : 50;
+    const [data, total] = await this.inventoryService.findAll(pageNum, limitNum, search);
+    return { data, total };
+  }
+
+  @Get('stats')
+  getStats() {
+    return this.inventoryService.getStats();
+  }
+
+  @Get('for-selection')
+  findAllForSelection() {
+    return this.inventoryService.findAllForSelection();
   }
 
   @Get(':id')
@@ -20,17 +37,17 @@ export class InventoryController {
   }
 
   @Post()
-  create(@Body() dto: CreateInventoryDto) {
-    return this.inventoryService.create(dto);
+  create(@Body() dto: CreateInventoryDto, @Request() req: any) {
+    return this.inventoryService.create(dto, req.user.userId);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateInventoryDto) {
-    return this.inventoryService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateInventoryDto, @Request() req: any) {
+    return this.inventoryService.update(id, dto, req.user.userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.inventoryService.remove(id);
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.inventoryService.remove(id, req.user.userId);
   }
 }

@@ -23,6 +23,8 @@ interface Props {
   reservations: Reservation[];
   inventory: InventoryItem[];
   onAction: () => void;
+  userRole?: string;
+  currentUserId?: string;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -32,7 +34,7 @@ const STATUS_STYLES: Record<string, string> = {
   EXPIRED: 'bg-red-900/40 text-red-300 border border-red-700/40',
 };
 
-export default function ReservationList({ reservations, inventory, onAction }: Props) {
+export default function ReservationList({ reservations, inventory, onAction, userRole, currentUserId }: Props) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
 
@@ -83,7 +85,9 @@ export default function ReservationList({ reservations, inventory, onAction }: P
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h2 className="text-white font-semibold text-lg">My Reservations</h2>
+        <h2 className="text-white font-semibold text-lg">
+          {userRole === 'admin' ? 'All Reservations' : 'My Reservations'}
+        </h2>
         <span className="text-gray-500 text-sm">{reservations.length} total</span>
       </div>
 
@@ -123,13 +127,15 @@ export default function ReservationList({ reservations, inventory, onAction }: P
                 </div>
                 {res.status === 'PENDING' && (
                   <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => handleConfirm(res.id)}
-                      disabled={!!actionLoading}
-                      className="px-3 py-1.5 bg-green-700 hover:bg-green-600 disabled:bg-gray-700 text-white text-xs font-medium rounded-lg transition"
-                    >
-                      {actionLoading === res.id + '-confirm' ? '...' : 'Confirm'}
-                    </button>
+                    {userRole === 'admin' && (
+                      <button
+                        onClick={() => handleConfirm(res.id)}
+                        disabled={!!actionLoading}
+                        className="px-3 py-1.5 bg-green-700 hover:bg-green-600 disabled:bg-gray-700 text-white text-xs font-medium rounded-lg transition"
+                      >
+                        {actionLoading === res.id + '-confirm' ? '...' : 'Confirm'}
+                      </button>
+                    )}
                     <button
                       onClick={() => handleCancel(res.id)}
                       disabled={!!actionLoading}

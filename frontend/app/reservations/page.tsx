@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated, getUser, logout } from '../../lib/auth';
-import { getInventory, getMyReservations } from '../../lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { getInventory, getMyReservations, getReservations } from '../../lib/api';
 import ReservationForm from '../../components/ReservationForm';
 import ReservationList from '../../components/ReservationList';
 
@@ -29,29 +29,28 @@ export interface Reservation {
 
 export default function ReservationsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; username: string; role: string } | null>(null);
+  const { user, logout } = useAuth();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.replace('/login');
-      return;
+    if (user) {
+      fetchAll();
     }
-    setUser(getUser());
-    fetchAll();
-
-  }, []);
+  }, [user]);
 
   const fetchAll = async () => {
     setLoading(true);
     setError('');
     try {
-      const [invRes, resRes] = await Promise.all([getInventory(), getMyReservations()]);
-      setInventory(invRes.data);
-      setReservations(resRes.data || []);
+      const [invRes, resRes] = await Promise.all([
+        getInventory(), 
+        user?.role === 'admin' ? getReservations() : getMyReservations()
+      ]);
+      setInventory(invRes.data?.data || []);
+      setReservations(user?.role === 'admin' ? resRes.data?.data || [] : resRes.data || []);
     } catch {
       setError('Failed to load data.');
     } finally {
@@ -115,11 +114,13 @@ export default function ReservationsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <ReservationForm inventory={inventory} onSuccess={fetchAll} />
-            </div>
-            <div className="lg:col-span-2">
-              <ReservationList reservations={reservations} inventory={inventory} onAction={fetchAll} />
+            {user?.role !== 'admin' && (
+              <div className="lg:col-span-1">
+                <ReservationForm inventory={inventory} onSuccess={fetchAll} />
+              </div>
+            )}
+            <div className={`lg:col-span-2 ${user?.role === 'admin' ? 'lg:col-span-3 lg:w-3/4 lg:mx-auto' : ''}`}>
+              <ReservationList reservations={reservations} inventory={inventory} onAction={fetchAll} userRole={user?.role} currentUserId={user?.id} />
             </div>
           </div>
         )}

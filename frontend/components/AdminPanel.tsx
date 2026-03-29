@@ -288,12 +288,12 @@ export default function AdminPanel() {
       </div>
 
 
-      {auditLogs.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-800">
-            <h2 className="text-white font-semibold text-lg">Audit Logs</h2>
-          </div>
-          <div className="overflow-x-auto">
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden mt-8">
+        <div className="px-6 py-4 border-b border-gray-800">
+          <h2 className="text-white font-semibold text-lg">Audit Logs</h2>
+        </div>
+        <div className="overflow-x-auto">
+          {auditLogs.length > 0 ? (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-800">
@@ -312,9 +312,13 @@ export default function AdminPanel() {
                 ))}
               </tbody>
             </table>
-          </div>
+          ) : (
+            <div className="px-6 py-8 text-center text-gray-500 text-sm">
+              No audit logs found yet. Actions taken in the system will appear here.
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

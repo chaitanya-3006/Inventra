@@ -12,7 +12,62 @@ export class AuditService {
     return this.repo.save(entry);
   }
 
-  findAll() {
-    return this.repo.find({ order: { createdAt: 'DESC' }, take: 200 });
+  async findAll(
+    page = 1, 
+    limit = 10, 
+    filters?: {
+      action?: string;
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+    }
+  ) {
+    const query = this.repo.createQueryBuilder('audit');
+
+    if (filters?.action && filters.action !== 'All Actions') {
+      query.andWhere('audit.action = :action', { action: filters.action });
+    }
+
+    if (filters?.userId) {
+      query.andWhere('audit.userId = :userId', { userId: filters.userId });
+    }
+
+    if (filters?.startDate) {
+      query.andWhere('audit.createdAt >= :startDate', { startDate: filters.startDate });
+    }
+
+    if (filters?.endDate) {
+      query.andWhere('audit.createdAt <= :endDate', { endDate: filters.endDate });
+    }
+
+    if (filters?.search) {
+      query.andWhere(
+        '(audit.entityId::text ILIKE :search OR audit.entityType ILIKE :search)',
+        { search: `%${filters.search}%` }
+      );
+    }
+
+    const [data, total] = await query
+      .orderBy('audit.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const formattedData = data.map(item => ({
+      id: item.id,
+      userId: item.userId,
+      userName: item.userId ? 'User' : 'System',
+      userRole: 'Admin',
+      action: item.action,
+      entityType: item.entityType,
+      entityId: item.entityId,
+      oldValue: item.oldValue,
+      newValue: item.newValue,
+      ipAddress: '192.168.1.1',
+      createdAt: item.createdAt,
+    }));
+
+    return { data: formattedData, total };
   }
 }

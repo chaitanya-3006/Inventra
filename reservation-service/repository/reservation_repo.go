@@ -18,7 +18,6 @@ func NewReservationRepo() *ReservationRepo {
 	return &ReservationRepo{}
 }
 
-
 func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest) (*models.Reservation, error) {
 	inventoryID, err := uuid.Parse(req.InventoryID)
 	if err != nil {
@@ -34,7 +33,6 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
-
 
 	var available int
 	err = tx.QueryRow(ctx,
@@ -52,7 +50,6 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 		return nil, fmt.Errorf("insufficient stock: available=%d, requested=%d", available, req.Quantity)
 	}
 
-
 	_, err = tx.Exec(ctx,
 		`UPDATE inventory SET reserved_quantity = reserved_quantity + $1, updated_at = NOW() WHERE id = $2`,
 		req.Quantity, inventoryID,
@@ -60,7 +57,6 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	if err != nil {
 		return nil, err
 	}
-
 
 	var res models.Reservation
 	err = tx.QueryRow(ctx,
@@ -84,8 +80,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	return &res, nil
 }
 
-
-func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uuid.UUID) (*models.Reservation, error) {
+func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uuid.UUID, isAdmin bool) (*models.Reservation, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -93,11 +88,17 @@ func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uui
 	defer tx.Rollback(ctx)
 
 	var res models.Reservation
-	err = tx.QueryRow(ctx,
-		`SELECT id, inventory_id, user_id, quantity, status, expires_at FROM reservations
-     WHERE id = $1 AND user_id = $2 FOR UPDATE`,
-		reservationID, userID,
-	).Scan(&res.ID, &res.InventoryID, &res.UserID, &res.Quantity, &res.Status, &res.ExpiresAt)
+	query := `SELECT id, inventory_id, user_id, quantity, status, expires_at FROM reservations WHERE id = $1`
+	args := []interface{}{reservationID}
+	
+	if !isAdmin {
+		query += ` AND user_id = $2 FOR UPDATE`
+		args = append(args, userID)
+	} else {
+		query += ` FOR UPDATE`
+	}
+
+	err = tx.QueryRow(ctx, query, args...).Scan(&res.ID, &res.InventoryID, &res.UserID, &res.Quantity, &res.Status, &res.ExpiresAt)
 	if err == pgx.ErrNoRows {
 		return nil, fmt.Errorf("reservation not found")
 	}
@@ -111,7 +112,6 @@ func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uui
 	if time.Now().After(res.ExpiresAt) {
 		return nil, fmt.Errorf("reservation has expired")
 	}
-
 
 	_, err = tx.Exec(ctx,
 		`UPDATE inventory
@@ -141,8 +141,7 @@ func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uui
 	return &res, tx.Commit(ctx)
 }
 
-
-func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid.UUID) (*models.Reservation, error) {
+func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid.UUID, isAdmin bool) (*models.Reservation, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -150,11 +149,17 @@ func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid
 	defer tx.Rollback(ctx)
 
 	var res models.Reservation
-	err = tx.QueryRow(ctx,
-		`SELECT id, inventory_id, user_id, quantity, status FROM reservations
-     WHERE id = $1 AND user_id = $2 FOR UPDATE`,
-		reservationID, userID,
-	).Scan(&res.ID, &res.InventoryID, &res.UserID, &res.Quantity, &res.Status)
+	query := `SELECT id, inventory_id, user_id, quantity, status FROM reservations WHERE id = $1`
+	args := []interface{}{reservationID}
+	
+	if !isAdmin {
+		query += ` AND user_id = $2 FOR UPDATE`
+		args = append(args, userID)
+	} else {
+		query += ` FOR UPDATE`
+	}
+
+	err = tx.QueryRow(ctx, query, args...).Scan(&res.ID, &res.InventoryID, &res.UserID, &res.Quantity, &res.Status)
 	if err == pgx.ErrNoRows {
 		return nil, fmt.Errorf("reservation not found")
 	}
@@ -189,7 +194,6 @@ func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid
 
 	return &res, tx.Commit(ctx)
 }
-
 
 func (r *ReservationRepo) ExpireReservations(ctx context.Context) (int, error) {
 	tx, err := db.Pool.Begin(ctx)
@@ -245,7 +249,6 @@ func (r *ReservationRepo) ExpireReservations(ctx context.Context) (int, error) {
 	return len(expired), nil
 }
 
-
 func (r *ReservationRepo) GetReservationsByUser(ctx context.Context, userID uuid.UUID) ([]models.Reservation, error) {
 	rows, err := db.Pool.Query(ctx,
 		`SELECT id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at
@@ -257,7 +260,32 @@ func (r *ReservationRepo) GetReservationsByUser(ctx context.Context, userID uuid
 	}
 	defer rows.Close()
 
-	var results []models.Reservation
+	results := []models.Reservation{}
+	for rows.Next() {
+		var res models.Reservation
+		if err := rows.Scan(
+			&res.ID, &res.InventoryID, &res.UserID,
+			&res.Quantity, &res.Status, &res.ExpiresAt,
+			&res.CreatedAt, &res.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, res)
+	}
+	return results, nil
+}
+
+func (r *ReservationRepo) GetAllReservations(ctx context.Context) ([]models.Reservation, error) {
+	rows, err := db.Pool.Query(ctx,
+		`SELECT id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at
+     FROM reservations ORDER BY created_at DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := []models.Reservation{}
 	for rows.Next() {
 		var res models.Reservation
 		if err := rows.Scan(

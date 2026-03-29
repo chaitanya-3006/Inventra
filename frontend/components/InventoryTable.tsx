@@ -12,78 +12,87 @@ interface InventoryItem {
 
 interface Props {
   items: InventoryItem[];
+  onReserve: (item: InventoryItem) => void;
+  isAdmin?: boolean;
 }
 
-export default function InventoryTable({ items }: Props) {
+export default function InventoryTable({ items, onReserve, isAdmin = false }: Props) {
   if (items.length === 0) {
     return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center">
-        <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        </div>
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
         <p className="text-gray-400">No inventory items found</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-800">
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">SKU</th>
-              <th className="text-left px-6 py-4 text-gray-400 font-medium">Name</th>
-              <th className="text-right px-6 py-4 text-gray-400 font-medium">Total</th>
-              <th className="text-right px-6 py-4 text-gray-400 font-medium">Reserved</th>
-              <th className="text-right px-6 py-4 text-gray-400 font-medium">Available</th>
-              <th className="text-center px-6 py-4 text-gray-400 font-medium">Availability</th>
+            <tr className="bg-gray-800/50 text-left text-gray-400 text-sm">
+              <th className="px-4 py-3 font-medium">SKU</th>
+              <th className="px-4 py-3 font-medium">Item Name</th>
+              <th className="px-4 py-3 font-medium text-right">Total Qty</th>
+              <th className="px-4 py-3 font-medium text-right">Reserved</th>
+              <th className="px-4 py-3 font-medium text-right">Available</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium text-right">Last Updated</th>
+              {!isAdmin && <th className="px-4 py-3 font-medium text-center">Action</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
-            {items.map((item) => {
-              const pct = item.totalQuantity > 0
-                ? Math.round((item.availableQuantity / item.totalQuantity) * 100)
-                : 0;
-              const barColor = pct > 50 ? 'bg-green-500' : pct > 20 ? 'bg-yellow-500' : 'bg-red-500';
-
-              return (
-                <tr key={item.id} className="hover:bg-gray-800/50 transition">
-                  <td className="px-6 py-4">
-                    <span className="font-mono text-brand-400 text-xs bg-brand-900/20 px-2 py-1 rounded">
-                      {item.sku}
-                    </span>
+            {items.map(item => (
+              <tr key={item.id} className="hover:bg-gray-800/30 transition">
+                <td className="px-4 py-4">
+                  <span className="text-white font-medium">{item.sku}</span>
+                </td>
+                <td className="px-4 py-4">
+                  <span className="text-gray-300">{item.name}</span>
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <span className="text-gray-300">{item.totalQuantity}</span>
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <span className="text-yellow-400">{item.reservedQuantity}</span>
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <span className={`font-medium ${item.availableQuantity > 10 ? 'text-green-400' : item.availableQuantity > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                    {item.availableQuantity}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    item.availableQuantity > 10 ? 'bg-green-900/50 text-green-400' :
+                    item.availableQuantity > 0 ? 'bg-yellow-900/50 text-yellow-400' :
+                    'bg-red-900/50 text-red-400'
+                  }`}>
+                    {item.availableQuantity > 10 ? 'In Stock' : item.availableQuantity > 0 ? 'Low Stock' : 'Out of Stock'}
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <span className="text-gray-500 text-sm">
+                    {new Date(item.updatedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </td>
+                {!isAdmin && (
+                  <td className="px-4 py-4 text-center">
+                    <button
+                      onClick={() => onReserve(item)}
+                      disabled={item.availableQuantity === 0}
+                      className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition"
+                    >
+                      Reserve
+                    </button>
                   </td>
-                  <td className="px-6 py-4 text-white font-medium">{item.name}</td>
-                  <td className="px-6 py-4 text-right text-gray-300">
-                    {item.totalQuantity.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className={`${item.reservedQuantity > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
-                      {item.reservedQuantity.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className={`font-semibold ${pct > 50 ? 'text-green-400' : pct > 20 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {item.availableQuantity.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-800 rounded-full h-2">
-                        <div
-                          className={`${barColor} h-2 rounded-full transition-all duration-500`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-400 w-9 text-right">{pct}%</span>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                )}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

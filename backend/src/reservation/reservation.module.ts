@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ReservationController } from './reservation.controller';
+import { ReservationController, ReservationsController } from './reservation.controller';
+import { AuditModule } from '../audit/audit.module';
 
-@Module({ controllers: [ReservationController] })
+@Module({ 
+  imports: [AuditModule],
+  controllers: [ReservationController, ReservationsController] 
+})
 export class ReservationModule {}

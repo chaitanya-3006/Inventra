@@ -3,12 +3,13 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { login, register } from '../../lib/api';
-import { saveToken } from '../../lib/auth';
+import { useAuth } from '@/lib/auth-context';
 
 type Tab = 'signin' | 'register';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login: setAuthUser } = useAuth();
   const [tab, setTab] = useState<Tab>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +46,7 @@ export default function LoginPage() {
         ? await login(username, password)
         : await register(username, password);
 
-      saveToken(res.data.access_token, res.data.user);
+      setAuthUser(res.data.access_token, res.data.user);
       router.push('/inventory');
     } catch (err: any) {
       const msg = err.response?.data?.message;

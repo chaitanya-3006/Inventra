@@ -32,7 +32,7 @@ func (s *ReservationService) Confirm(ctx context.Context, req models.ConfirmRequ
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.Confirm(ctx, reservationID, userID)
+	return s.repo.Confirm(ctx, reservationID, userID, req.IsAdmin)
 }
 
 func (s *ReservationService) Cancel(ctx context.Context, req models.CancelRequest) (*models.Reservation, error) {
@@ -44,7 +44,7 @@ func (s *ReservationService) Cancel(ctx context.Context, req models.CancelReques
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.Cancel(ctx, reservationID, userID)
+	return s.repo.Cancel(ctx, reservationID, userID, req.IsAdmin)
 }
 
 func (s *ReservationService) GetByUser(ctx context.Context, userIDStr string) ([]models.Reservation, error) {
@@ -55,11 +55,21 @@ func (s *ReservationService) GetByUser(ctx context.Context, userIDStr string) ([
 	return s.repo.GetReservationsByUser(ctx, userID)
 }
 
+func (s *ReservationService) GetAllReservations(ctx context.Context) ([]models.Reservation, error) {
+	return s.repo.GetAllReservations(ctx)
+}
+
+var (
+	expiryCtx    context.Context
+	expiryCancel context.CancelFunc
+)
+
 // StartExpiryWorker runs every minute to expire stale reservations.
 func (s *ReservationService) StartExpiryWorker() {
+	expiryCtx, expiryCancel = context.WithCancel(context.Background())
 	c := cron.New()
 	c.AddFunc("@every 1m", func() {
-		n, err := s.repo.ExpireReservations(context.Background())
+		n, err := s.repo.ExpireReservations(expiryCtx)
 		if err != nil {
 			log.Printf("[expiry worker] error: %v", err)
 			return
@@ -69,4 +79,11 @@ func (s *ReservationService) StartExpiryWorker() {
 		}
 	})
 	c.Start()
+}
+
+// StopExpiryWorker stops the expiry worker gracefully
+func StopExpiryWorker() {
+	if expiryCancel != nil {
+		expiryCancel()
+	}
 }

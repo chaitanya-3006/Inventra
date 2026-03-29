@@ -6,6 +6,8 @@ import { InventoryModule } from './inventory/inventory.module';
 import { ReservationModule } from './reservation/reservation.module';
 import { UsersModule } from './users/users.module';
 import { AuditModule } from './audit/audit.module';
+import { HistoryModule } from './history/history.module';
+import { SafeLockModule } from './safe-lock/safe-lock.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { AuditModule } from './audit/audit.module';
     ReservationModule,
     UsersModule,
     AuditModule,
+    HistoryModule,
+    SafeLockModule,
   ],
 })
 export class AppModule {}

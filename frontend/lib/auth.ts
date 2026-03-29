@@ -6,7 +6,13 @@ export const saveToken = (token: string, user: { id: string; username: string; r
 export const getUser = (): { id: string; username: string; role: string } | null => {
   if (typeof window === 'undefined') return null;
   const u = localStorage.getItem('user');
-  return u ? JSON.parse(u) : null;
+  if (!u) return null;
+  try {
+    return JSON.parse(u);
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
 };
 
 export const getToken = (): string | null => {

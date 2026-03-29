@@ -47,11 +47,23 @@ CREATE TABLE audit_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE safe_locks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  inventory_id UUID NOT NULL REFERENCES inventory(id),
+  admin_id UUID NOT NULL REFERENCES users(id),
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  expires_at TIMESTAMPTZ,
+  permanent BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE INDEX idx_reservations_inventory_id ON reservations(inventory_id);
 CREATE INDEX idx_reservations_user_id ON reservations(user_id);
 CREATE INDEX idx_reservations_status ON reservations(status);
 CREATE INDEX idx_reservations_expires_at ON reservations(expires_at);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_safe_locks_inventory_id ON safe_locks(inventory_id);
+CREATE INDEX idx_safe_locks_expires_at ON safe_locks(expires_at);
 
 
 INSERT INTO users (username, password_hash, role)
