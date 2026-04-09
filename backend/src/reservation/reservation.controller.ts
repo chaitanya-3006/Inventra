@@ -31,7 +31,7 @@ export class ReservationController {
       });
       await this.auditService.log({
         userId: req.user.userId,
-        action: 'Reservation Created',
+        action: 'Reservation Auto-Confirmed',
         entityType: 'reservation',
         entityId: dto.inventoryId,
         newValue: dto

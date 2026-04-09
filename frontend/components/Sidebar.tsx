@@ -64,10 +64,10 @@ export default function Sidebar() {
       <div className="mt-auto p-4">
         <div className="bg-gray-800 rounded-lg p-4">
           <h3 className="text-gray-400 text-sm font-medium mb-2">Need Help?</h3>
-          <p className="text-gray-300 text-xs">You can contact?</p>
+          <p className="text-gray-500 text-xs mb-3">Contact your administrator for system support</p>
           <button
             onClick={handleLogout}
-            className="w-full mt-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm transition-colors"
+            className="w-full mt-1 px-3 py-2 bg-red-900/50 hover:bg-red-800 text-red-400 rounded text-sm transition-colors"
           >
             Logout
           </button>

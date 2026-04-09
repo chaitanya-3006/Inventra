@@ -75,25 +75,8 @@ export default function Pagination({
 
   return (
     <div className="flex items-center justify-between px-4 pt-4 border-t border-gray-800">
-      <div className="flex items-center gap-2 text-gray-400 text-sm">
-        <select
-          value={rowsPerPage}
-          onChange={(e) => {
-            const newRowsPerPage = parseInt(e.target.value);
-            // Reset to first page when changing rows per page
-            onPageChange(1);
-            // Note: The parent should handle updating rowsPerPage state
-            // We're only triggering a page change to 1 here
-          }}
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-gray-300"
-        >
-          <option value="5">5</option>
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-        <span> rows per page</span>
+      <div className="text-gray-400 text-sm">
+        Showing {((currentPage - 1) * rowsPerPage) + 1} - {Math.min(currentPage * rowsPerPage, totalItems)} of {totalItems}
       </div>
       <div className="flex items-center gap-2">
         <button

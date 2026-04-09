@@ -50,8 +50,14 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 		return nil, fmt.Errorf("insufficient stock: available=%d, requested=%d", available, req.Quantity)
 	}
 
+	// Auto-confirm: stock is available, so deduct immediately and mark CONFIRMED.
+	// total_quantity decreases (item is consumed), reserved_quantity stays net-zero
+	// (we never pass through PENDING, so no reserved bump needed).
 	_, err = tx.Exec(ctx,
-		`UPDATE inventory SET reserved_quantity = reserved_quantity + $1, updated_at = NOW() WHERE id = $2`,
+		`UPDATE inventory
+		 SET total_quantity = total_quantity - $1,
+		     updated_at = NOW()
+		 WHERE id = $2`,
 		req.Quantity, inventoryID,
 	)
 	if err != nil {
@@ -61,8 +67,8 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	var res models.Reservation
 	err = tx.QueryRow(ctx,
 		`INSERT INTO reservations (inventory_id, user_id, quantity, status, expires_at)
-     VALUES ($1, $2, $3, 'PENDING', NOW() + INTERVAL '15 minutes')
-     RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
+		 VALUES ($1, $2, $3, 'CONFIRMED', NOW() + INTERVAL '15 minutes')
+		 RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
 		inventoryID, userID, req.Quantity,
 	).Scan(
 		&res.ID, &res.InventoryID, &res.UserID,
@@ -151,7 +157,7 @@ func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid
 	var res models.Reservation
 	query := `SELECT id, inventory_id, user_id, quantity, status FROM reservations WHERE id = $1`
 	args := []interface{}{reservationID}
-	
+
 	if !isAdmin {
 		query += ` AND user_id = $2 FOR UPDATE`
 		args = append(args, userID)
@@ -167,12 +173,14 @@ func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid
 		return nil, err
 	}
 
-	if res.Status != "PENDING" {
-		return nil, fmt.Errorf("only PENDING reservations can be cancelled, current: %s", res.Status)
+	if res.Status != "CONFIRMED" {
+		return nil, fmt.Errorf("only CONFIRMED reservations can be cancelled, current: %s", res.Status)
 	}
 
+	// Restore the stock: since auto-confirm deducted total_quantity directly,
+	// cancelling must add it back so the item is available again.
 	_, err = tx.Exec(ctx,
-		`UPDATE inventory SET reserved_quantity = reserved_quantity - $1, updated_at = NOW() WHERE id = $2`,
+		`UPDATE inventory SET total_quantity = total_quantity + $1, updated_at = NOW() WHERE id = $2`,
 		res.Quantity, res.InventoryID,
 	)
 	if err != nil {
@@ -181,7 +189,7 @@ func (r *ReservationRepo) Cancel(ctx context.Context, reservationID, userID uuid
 
 	err = tx.QueryRow(ctx,
 		`UPDATE reservations SET status = 'CANCELLED', updated_at = NOW()
-     WHERE id = $1 RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
+		 WHERE id = $1 RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
 		reservationID,
 	).Scan(
 		&res.ID, &res.InventoryID, &res.UserID,

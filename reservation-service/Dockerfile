@@ -5,7 +5,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o reservation-service .
 
-FROM alpine:3.19
+FROM golang:1.23-alpine
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/reservation-service .

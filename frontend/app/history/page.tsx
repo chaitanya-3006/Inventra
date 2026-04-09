@@ -108,31 +108,7 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="flex-1 flex flex-col">
-        <div className="bg-gray-900 border-b border-gray-800 px-6 py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <span className="text-white font-bold text-lg">Inventra</span>
-            </div>
-            <div className="flex items-center gap-4 ml-auto">
-              <div className="flex items-center gap-3">
-                <span className="text-gray-400 text-sm">{user?.username}</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${user?.role === 'admin' ? 'bg-purple-900/50 text-purple-300' : 'bg-gray-800 text-gray-400'}`}>
-                  {user?.role}
-                </span>
-              </div>
-              <button onClick={handleLogout} className="text-red-400 hover:text-red-300 text-sm transition">Logout</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col overflow-y-auto p-6">
+    <div className="flex-1 flex flex-col overflow-y-auto p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-white">History</h1>
@@ -246,8 +222,6 @@ export default function HistoryPage() {
               rowsPerPage={rowsPerPage}
             />
           </div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -144,16 +144,6 @@ export default function FilterBar({
             )}
           </div>
         </div>
-
-        {/* Apply Button (full width on mobile) */}
-        <div className="col-span-1 lg:col-span-4 flex justify-end">
-          <button
-            onClick={() => {}}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition"
-          >
-            Apply Filters
-          </button>
-        </div>
       </div>
     </div>
   );

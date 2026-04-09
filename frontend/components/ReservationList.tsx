@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { confirmReservation, cancelReservation } from '../lib/api';
+import { cancelReservation } from '../lib/api';
 
 interface InventoryItem {
   id: string;
@@ -48,26 +48,6 @@ export default function ReservationList({ reservations, inventory, onAction, use
     return d.toLocaleString();
   };
 
-  const getTimeRemaining = (expiresAt: string) => {
-    const diff = new Date(expiresAt).getTime() - Date.now();
-    if (diff <= 0) return 'Expired';
-    const mins = Math.floor(diff / 60000);
-    const secs = Math.floor((diff % 60000) / 1000);
-    return `${mins}m ${secs}s`;
-  };
-
-  const handleConfirm = async (id: string) => {
-    setError('');
-    setActionLoading(id + '-confirm');
-    try {
-      await confirmReservation(id);
-      onAction();
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Confirm failed');
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const handleCancel = async (id: string) => {
     setError('');
@@ -99,7 +79,7 @@ export default function ReservationList({ reservations, inventory, onAction, use
 
       {reservations.length === 0 ? (
         <div className="p-12 text-center text-gray-400 text-sm">
-          No reservations yet. Create one using the form.
+          No reservations yet.{userRole !== 'admin' && ' Create one using the form.'}
         </div>
       ) : (
         <div className="divide-y divide-gray-800">
@@ -118,24 +98,10 @@ export default function ReservationList({ reservations, inventory, onAction, use
                   <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
                     <span>Qty: <span className="text-gray-300">{res.quantity}</span></span>
                     <span>Created: <span className="text-gray-300">{formatTime(res.created_at)}</span></span>
-                    {res.status === 'PENDING' && (
-                      <span className="text-yellow-400">
-                        ⏱ {getTimeRemaining(res.expires_at)}
-                      </span>
-                    )}
                   </div>
                 </div>
-                {res.status === 'PENDING' && (
+                {res.status === 'CONFIRMED' && (
                   <div className="flex gap-2 shrink-0">
-                    {userRole === 'admin' && (
-                      <button
-                        onClick={() => handleConfirm(res.id)}
-                        disabled={!!actionLoading}
-                        className="px-3 py-1.5 bg-green-700 hover:bg-green-600 disabled:bg-gray-700 text-white text-xs font-medium rounded-lg transition"
-                      >
-                        {actionLoading === res.id + '-confirm' ? '...' : 'Confirm'}
-                      </button>
-                    )}
                     <button
                       onClick={() => handleCancel(res.id)}
                       disabled={!!actionLoading}
