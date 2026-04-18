@@ -3,7 +3,6 @@ import { ReservationController, ReservationsController } from './reservation.con
 import { AuditModule } from '../audit/audit.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ReservationProcessor } from './reservation.processor';
-import { HistoryController } from './history.controller';
 
 @Module({ 
   imports: [
@@ -13,6 +12,6 @@ import { HistoryController } from './history.controller';
     }),
   ],
   providers: [ReservationProcessor],
-  controllers: [ReservationController, ReservationsController, HistoryController] 
+  controllers: [ReservationController, ReservationsController] 
 })
 export class ReservationModule {}
