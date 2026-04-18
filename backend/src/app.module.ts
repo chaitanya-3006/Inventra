@@ -24,12 +24,20 @@ import { EventsModule } from './events/events.module';
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false,
     }),
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD || undefined,
-        tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+    BullModule.forRootAsync({
+      useFactory: () => {
+        const rawHost = process.env.REDIS_HOST || 'localhost';
+        const isUrl = rawHost.startsWith('redis://') || rawHost.startsWith('rediss://');
+        const urlOptions = isUrl ? new URL(rawHost) : null;
+        
+        return {
+          connection: {
+            host: isUrl ? urlOptions.hostname : rawHost,
+            port: isUrl ? parseInt(urlOptions.port || '6379') : parseInt(process.env.REDIS_PORT || '6379'),
+            password: process.env.REDIS_PASSWORD || undefined,
+            tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+          },
+        };
       },
     }),
     AuthModule,
