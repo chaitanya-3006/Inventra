@@ -5,15 +5,17 @@ import (
 	"time"
 
 	"reservation-service/models"
+	"reservation-service/repository"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
-type SafeLockHandler struct{}
+type SafeLockHandler struct {
+	repo *repository.SafeLockRepo
+}
 
-func NewSafeLockHandler() *SafeLockHandler {
-	return &SafeLockHandler{}
+func NewSafeLockHandler(repo *repository.SafeLockRepo) *SafeLockHandler {
+	return &SafeLockHandler{repo: repo}
 }
 
 func (h *SafeLockHandler) CreateLock(c *gin.Context) {
@@ -23,18 +25,18 @@ func (h *SafeLockHandler) CreateLock(c *gin.Context) {
 		return
 	}
 
-	// For now, return a mock response
-	expiresAt := req.ExpiresAt
-	if req.Permanent {
-		expiresAt = nil
+	lockID, err := h.repo.CreateLock(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	res := gin.H{
-		"id":           uuid.New().String(),
+		"id":           lockID,
 		"inventory_id": req.InventoryID,
 		"admin_id":     req.AdminID,
 		"quantity":     req.Quantity,
-		"expires_at":   expiresAt,
+		"expires_at":   req.ExpiresAt,
 		"permanent":    req.Permanent,
 		"created_at":   time.Now(),
 	}
@@ -45,6 +47,11 @@ func (h *SafeLockHandler) ReleaseLock(c *gin.Context) {
 	var req models.SafeLockReleaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.repo.ReleaseLock(req.LockID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

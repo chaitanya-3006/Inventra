@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { SafeLock } from './safe-lock.entity';
 import { Inventory } from '../inventory/inventory.entity';
 import { User } from '../users/user.entity';
+import { EventsGateway } from '../events/events.gateway';
 import axios from 'axios';
 
 const GO_SERVICE = process.env.GO_SERVICE_URL || 'http://go-service:8081';
@@ -16,6 +17,7 @@ export class SafeLockService {
     @InjectRepository(SafeLock) private safeLockRepo: Repository<SafeLock>,
     @InjectRepository(Inventory) private inventoryRepo: Repository<Inventory>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    private eventsGateway: EventsGateway,
   ) {}
 
   async findAll(page = 1, limit = 10, filters?: {
@@ -93,46 +95,52 @@ export class SafeLockService {
       throw new BadRequestException('Not enough available quantity');
     }
 
-    const safeLock = this.safeLockRepo.create({
-      inventoryId,
-      adminId,
-      quantity,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
-      permanent,
-    });
-    
-    await this.safeLockRepo.save(safeLock);
-
-    // Also lock in Go service for consistency
+    // Let the Go service handle the atomic DB update and generate the lock
+    let lockData: any;
     try {
-      await axios.post(`${GO_SERVICE}/safe-lock`, {
+      const resp = await axios.post(`${GO_SERVICE}/safe-lock`, {
         inventory_id: inventoryId,
         admin_id: adminId,
         quantity,
-        expires_at: expiresAt,
+        expires_at: expiresAt || null,
         permanent,
       });
-    } catch (e) {
-      this.logger.error('Failed to sync with Go service during lock', e);
+      lockData = resp.data;
+    } catch (e: any) {
+      this.logger.error('Failed to safe-lock in Go service', e);
+      throw new BadRequestException(e.response?.data?.error || 'Failed to safe lock');
     }
 
-    return safeLock;
+    this.eventsGateway.emitSafeLockUpdate();
+    this.eventsGateway.emitInventoryUpdate();
+
+    return {
+      id: lockData.id,
+      inventoryId: lockData.inventory_id,
+      adminId: lockData.admin_id,
+      quantity: lockData.quantity,
+      expiresAt: lockData.expires_at,
+      permanent: lockData.permanent,
+      createdAt: lockData.created_at,
+    };
   }
 
   async unlock(id: string) {
     const safeLock = await this.safeLockRepo.findOne({ where: { id } });
     if (!safeLock) throw new NotFoundException('Safe-lock not found');
 
-    await this.safeLockRepo.delete(id);
-
-    // Also unlock in Go service
+    // Delete in Go service directly
     try {
       await axios.post(`${GO_SERVICE}/safe-lock/release`, {
         lock_id: id,
       });
-    } catch (e) {
-      this.logger.error('Failed to sync with Go service during unlock', e);
+    } catch (e: any) {
+      this.logger.error('Failed to release lock in Go service', e);
+      throw new BadRequestException(e.response?.data?.error || 'Failed to release lock');
     }
+
+    this.eventsGateway.emitSafeLockUpdate();
+    this.eventsGateway.emitInventoryUpdate();
 
     return { released: true };
   }

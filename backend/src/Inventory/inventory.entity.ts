@@ -17,6 +17,9 @@ export class Inventory {
   @Column({ name: 'reserved_quantity', default: 0 })
   reservedQuantity: number;
 
+  @Column({ name: 'locked_quantity', default: 0 })
+  lockedQuantity: number;
+
   @Column({ name: 'available_quantity', select: true, insert: false, update: false })
   availableQuantity: number;
 

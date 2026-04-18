@@ -8,6 +8,7 @@ import AuditLogTable from '@/components/AuditLogTable';
 import SearchBar from '@/components/SearchBar';
 import Pagination from '@/components/Pagination';
 import FilterBar from '@/components/FilterBar';
+import toast from 'react-hot-toast';
 
 interface AuditLogItem {
   id: string;
@@ -58,7 +59,6 @@ export default function AuditLogPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await getAuditLogs({
         page,
@@ -72,7 +72,7 @@ export default function AuditLogPage() {
       setAuditLogs(res.data?.data || []);
       setTotalItems(res.data?.total || 0);
     } catch (err) {
-      setError('Failed to load audit logs. Please try again.');
+      toast.error('Failed to load audit logs. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -223,7 +223,7 @@ export default function AuditLogPage() {
             </div>
           </div>
 
-          {/* Main Content */}
+            {/* Main Content */}
           <div className="flex-1">
             <div className="mb-4">
               <h2 className="text-xl font-bold text-white">Activity Log</h2>
@@ -236,12 +236,6 @@ export default function AuditLogPage() {
                 }}
               />
             </div>
-
-            {error && (
-              <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm mb-6">
-                {error}
-              </div>
-            )}
 
             {loading ? (
               <div className="flex items-center justify-center h-64">

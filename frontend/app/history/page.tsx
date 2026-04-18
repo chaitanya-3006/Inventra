@@ -8,6 +8,8 @@ import StatCard from '@/components/StatCard';
 import HistoryTable from '@/components/HistoryTable';
 import FilterBar from '@/components/FilterBar';
 import Pagination from '@/components/Pagination';
+import toast from 'react-hot-toast';
+import { useSocketEvents } from '@/lib/useSocketEvents';
 
 interface HistoryItem {
   id: string;
@@ -55,9 +57,13 @@ export default function HistoryPage() {
     fetchData();
   }, [page, rowsPerPage, filters, refreshKey, user]);
 
+  useSocketEvents({
+    reservationUpdate: () => fetchData(),
+    inventoryUpdate: () => fetchData(),
+  });
+
   const fetchData = async () => {
     setLoading(true);
-    setError('');
     try {
       const [statsRes, historyRes] = await Promise.all([
         getHistoryStats(),
@@ -76,7 +82,7 @@ export default function HistoryPage() {
       setTotalItems(historyRes.data?.total || 0);
     } catch (err) {
       console.error('Failed to load history:', err);
-      setError('Failed to load history. Please try again.');
+      toast.error('Failed to load history. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -175,12 +181,6 @@ export default function HistoryPage() {
 
           {/* History Table Section */}
           <div className="flex-1">
-            {error && (
-              <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm mb-6">
-                {error}
-              </div>
-            )}
-
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex items-center gap-3 text-gray-400">

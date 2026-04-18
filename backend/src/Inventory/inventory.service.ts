@@ -5,12 +5,14 @@ import { Inventory } from './inventory.entity';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { AuditService } from '../audit/audit.service';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class InventoryService {
   constructor(
     @InjectRepository(Inventory) private repo: Repository<Inventory>,
     private auditService: AuditService,
+    private eventsGateway: EventsGateway,
   ) {}
 
   findAll(page = 1, limit = 50, search?: string) {
@@ -54,6 +56,7 @@ export class InventoryService {
       entityId: saved.id,
       newValue: { sku: saved.sku, name: saved.name, totalQuantity: saved.totalQuantity },
     });
+    this.eventsGateway.emitInventoryUpdate();
     return saved;
   }
 
@@ -69,6 +72,7 @@ export class InventoryService {
       oldValue: { name: before.name, totalQuantity: before.totalQuantity },
       newValue: { name: after.name, totalQuantity: after.totalQuantity },
     });
+    this.eventsGateway.emitInventoryUpdate();
     return after;
   }
 
@@ -82,6 +86,7 @@ export class InventoryService {
       oldValue: { sku: item.sku, name: item.name },
     });
     await this.repo.delete(id);
+    this.eventsGateway.emitInventoryUpdate();
     return { deleted: true };
   }
 

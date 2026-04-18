@@ -17,6 +17,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   go-service:
     build: ./reservation-service
     container_name: go-service
@@ -45,10 +56,14 @@ services:
       JWT_SECRET: supersecretjwtkey_change_in_production
       GO_SERVICE_URL: http://go-service:8081
       FRONTEND_URL: http://localhost:3000
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     ports:
       - "3001:3001"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       go-service:
         condition: service_started

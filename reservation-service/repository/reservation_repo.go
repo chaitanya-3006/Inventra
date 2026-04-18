@@ -307,3 +307,43 @@ func (r *ReservationRepo) GetAllReservations(ctx context.Context) ([]models.Rese
 	}
 	return results, nil
 }
+
+func (r *ReservationRepo) GetHistory(ctx context.Context) ([]models.Reservation, error) {
+	rows, err := db.Pool.Query(ctx,
+		`SELECT id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at
+     FROM reservations WHERE status IN ('CONFIRMED', 'CANCELLED', 'EXPIRED') ORDER BY updated_at DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := []models.Reservation{}
+	for rows.Next() {
+		var res models.Reservation
+		if err := rows.Scan(
+			&res.ID, &res.InventoryID, &res.UserID,
+			&res.Quantity, &res.Status, &res.ExpiresAt,
+			&res.CreatedAt, &res.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, res)
+	}
+	return results, nil
+}
+
+func (r *ReservationRepo) GetHistoryStats(ctx context.Context) (int, int, int, error) {
+	row := db.Pool.QueryRow(ctx,
+		`SELECT 
+			COALESCE(SUM(CASE WHEN status = 'CONFIRMED' THEN 1 ELSE 0 END), 0) as confirmed,
+			COALESCE(SUM(CASE WHEN status = 'EXPIRED' THEN 1 ELSE 0 END), 0) as expired,
+			COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) as cancelled
+		 FROM reservations`,
+	)
+	var confirmed, expired, cancelled int
+	if err := row.Scan(&confirmed, &expired, &cancelled); err != nil {
+		return 0, 0, 0, err
+	}
+	return confirmed, expired, cancelled, nil
+}

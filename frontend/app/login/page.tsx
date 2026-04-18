@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { login, register } from '../../lib/api';
 import { useAuth } from '@/lib/auth-context';
+import toast from 'react-hot-toast';
 
 type Tab = 'signin' | 'register';
 
@@ -22,20 +23,18 @@ export default function LoginPage() {
     setUsername('');
     setPassword('');
     setConfirmPassword('');
-    setError('');
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (tab === 'register') {
       if (password !== confirmPassword) {
-        setError('Passwords do not match.');
+        toast.error('Passwords do not match.');
         return;
       }
       if (password.length < 6) {
-        setError('Password must be at least 6 characters.');
+        toast.error('Password must be at least 6 characters.');
         return;
       }
     }
@@ -47,10 +46,11 @@ export default function LoginPage() {
         : await register(username, password);
 
       setAuthUser(res.data.access_token, res.data.user);
+      toast.success(tab === 'signin' ? 'Signed in successfully!' : 'Registered successfully!');
       router.push('/inventory');
     } catch (err: any) {
       const msg = err.response?.data?.message;
-      setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Something went wrong. Please try again.'));
+      toast.error(Array.isArray(msg) ? msg.join(', ') : (msg || 'Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -150,13 +150,6 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                   placeholder="••••••••"
                 />
-              </div>
-            )}
-
-            {/* Error */}
-            {error && (
-              <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm">
-                {error}
               </div>
             )}
 

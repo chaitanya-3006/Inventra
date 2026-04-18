@@ -8,6 +8,8 @@ import StatCard from '@/components/StatCard';
 import InventoryTable from '@/components/InventoryTable';
 import SearchBar from '@/components/SearchBar';
 import Pagination from '@/components/Pagination';
+import toast from 'react-hot-toast';
+import { useSocketEvents } from '@/lib/useSocketEvents';
 
 interface InventoryItem {
   id: string;
@@ -36,7 +38,6 @@ export default function InventoryPage() {
   });
   const [loading, setLoading] = useState(true);
   const [totalListings, setTotalListings] = useState(0);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,15 +45,17 @@ export default function InventoryPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newItem, setNewItem] = useState({ sku: '', name: '', totalQuantity: 1 });
   const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState('');
 
   useEffect(() => {
     fetchData();
   }, [page, rowsPerPage, searchTerm]);
 
+  useSocketEvents({
+    inventoryUpdate: () => fetchData(),
+  });
+
   const fetchData = async () => {
     setLoading(true);
-    setError('');
     try {
       const [statsRes, itemsRes] = await Promise.all([
         getInventoryStats(),
@@ -66,7 +69,7 @@ export default function InventoryPage() {
       setItems(itemsRes.data?.data || []);
       setTotalListings(itemsRes.data?.total || 0);
     } catch (err) {
-      setError('Failed to load inventory. Please try again.');
+      toast.error('Failed to load inventory. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -79,15 +82,15 @@ export default function InventoryPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreateError('');
     setCreateLoading(true);
     try {
       await createInventory(newItem);
+      toast.success('Inventory item created successfully!');
       setIsCreateOpen(false);
       setNewItem({ sku: '', name: '', totalQuantity: 1 });
       fetchData();
     } catch (err: any) {
-      setCreateError(err.response?.data?.message || err.response?.data?.error || 'Failed to create item');
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to create item');
     } finally {
       setCreateLoading(false);
     }
@@ -200,12 +203,6 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm mb-6">
-                {error}
-              </div>
-            )}
-
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="flex items-center gap-3 text-gray-400">
@@ -293,12 +290,6 @@ export default function InventoryPage() {
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
                 />
               </div>
-              
-              {createError && (
-                <div className="text-red-400 text-sm bg-red-900/30 p-2 rounded border border-red-900/50">
-                  {createError}
-                </div>
-              )}
 
               <div className="flex justify-end gap-3 mt-6">
                 <button

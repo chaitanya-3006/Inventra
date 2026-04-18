@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { getSafeLockStats, getSafeLockedItems, lockInventory, releaseSafeLock, getInventoryForSelection } from '@/lib/api';
 import StatCard from '@/components/StatCard';
 import SearchBar from '@/components/SearchBar';
+import toast from 'react-hot-toast';
+import { useSocketEvents } from '@/lib/useSocketEvents';
 
 interface SafeLockItem {
   id: string;
@@ -50,6 +52,11 @@ export default function SafeLockPage() {
     fetchData();
   }, [user, expiryFilter, searchTerm]);
 
+  useSocketEvents({
+    safeLockUpdate: () => fetchData(),
+    inventoryUpdate: () => fetchData(),
+  });
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -64,6 +71,7 @@ export default function SafeLockPage() {
       setSafeLocks(locksRes.data?.data || []);
     } catch (err) {
       console.error('Failed to load safe-lock data:', err);
+      toast.error('Failed to load safe-lock data');
     } finally {
       setLoading(false);
     }
@@ -75,6 +83,7 @@ export default function SafeLockPage() {
       setInventoryItems(res.data);
     } catch (err) {
       console.error('Failed to load inventory:', err);
+      toast.error('Failed to load inventory items');
     }
   };
 
@@ -92,19 +101,23 @@ export default function SafeLockPage() {
         expiresAt: permanent ? undefined : expiryDate,
         permanent,
       });
+      toast.success('Inventory safe-locked successfully!');
       setShowModal(false);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to lock inventory:', err);
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to lock inventory');
     }
   };
 
   const handleRelease = async (id: string) => {
     try {
       await releaseSafeLock(id);
+      toast.success('Safe-lock released!');
       fetchData();
     } catch (err) {
       console.error('Failed to release lock:', err);
+      toast.error('Failed to release lock');
     }
   };
 

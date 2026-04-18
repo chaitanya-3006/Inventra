@@ -72,7 +72,7 @@ export const getSafeLockedItems = (params?: {
   limit?: number; 
   expiry?: string; 
   search?: string 
-}) => API.get('/safe-lock/items', { params });
+}) => API.get('/safe-lock', { params });
 export const lockInventory = (data: { 
   inventoryId: string; 
   quantity: number; 

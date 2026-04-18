@@ -24,9 +24,10 @@ func main() {
 	log.Println("connected to PostgreSQL")
 
 	repo := repository.NewReservationRepo()
+	safeLockRepo := repository.NewSafeLockRepo()
 	svc := services.NewReservationService(repo)
 	handler := handlers.NewReservationHandler(svc)
-	safeLockHandler := handlers.NewSafeLockHandler()
+	safeLockHandler := handlers.NewSafeLockHandler(safeLockRepo)
 
 	svc.StartExpiryWorker()
 

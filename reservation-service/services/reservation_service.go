@@ -59,6 +59,14 @@ func (s *ReservationService) GetAllReservations(ctx context.Context) ([]models.R
 	return s.repo.GetAllReservations(ctx)
 }
 
+func (s *ReservationService) GetHistory(ctx context.Context) ([]models.Reservation, error) {
+	return s.repo.GetHistory(ctx)
+}
+
+func (s *ReservationService) GetHistoryStats(ctx context.Context) (int, int, int, error) {
+	return s.repo.GetHistoryStats(ctx)
+}
+
 var (
 	expiryCtx    context.Context
 	expiryCancel context.CancelFunc

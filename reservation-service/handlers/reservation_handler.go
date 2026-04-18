@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 
 	"reservation-service/models"
@@ -47,11 +48,14 @@ func (h *ReservationHandler) Reserve(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Go Service: Processing Reserve request: %+v", req)
 	res, err := h.svc.Reserve(c.Request.Context(), req)
 	if err != nil {
+		log.Printf("Go Service: Reserve request failed: %v", err)
 		c.JSON(getErrorStatus(err), gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Go Service: Reserve request completed successfully")
 	c.JSON(http.StatusCreated, res)
 }
 
@@ -61,11 +65,14 @@ func (h *ReservationHandler) Confirm(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Go Service: Processing Confirm request: %+v", req)
 	res, err := h.svc.Confirm(c.Request.Context(), req)
 	if err != nil {
+		log.Printf("Go Service: Confirm request failed: %v", err)
 		c.JSON(getErrorStatus(err), gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Go Service: Confirm request completed successfully")
 	c.JSON(http.StatusOK, res)
 }
 
@@ -75,11 +82,14 @@ func (h *ReservationHandler) Cancel(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Go Service: Processing Cancel request: %+v", req)
 	res, err := h.svc.Cancel(c.Request.Context(), req)
 	if err != nil {
+		log.Printf("Go Service: Cancel request failed: %v", err)
 		c.JSON(getErrorStatus(err), gin.H{"error": err.Error()})
 		return
 	}
+	log.Printf("Go Service: Cancel request completed successfully")
 	c.JSON(http.StatusOK, res)
 }
 
@@ -112,18 +122,29 @@ func (h *ReservationHandler) GetAll(c *gin.Context) {
 }
 
 func (h *ReservationHandler) GetHistory(c *gin.Context) {
-	// Return empty list for now - would query from DB
+	reservations, err := h.svc.GetHistory(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if reservations == nil {
+		reservations = []models.Reservation{}
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"data":  []models.Reservation{},
-		"total": 0,
+		"data":  reservations,
+		"total": len(reservations),
 	})
 }
 
 func (h *ReservationHandler) GetHistoryStats(c *gin.Context) {
-	// Return mock stats for now
+	confirmed, expired, cancelled, err := h.svc.GetHistoryStats(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"confirmed": 0,
-		"expired":   0,
-		"cancelled": 0,
+		"confirmed": confirmed,
+		"expired":   expired,
+		"cancelled": cancelled,
 	})
 }

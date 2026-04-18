@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 import { AuthModule } from './auth/auth.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { ReservationModule } from './reservation/reservation.module';
@@ -8,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AuditModule } from './audit/audit.module';
 import { HistoryModule } from './history/history.module';
 import { SafeLockModule } from './safe-lock/safe-lock.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -22,6 +24,12 @@ import { SafeLockModule } from './safe-lock/safe-lock.module';
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false,
     }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+      },
+    }),
     AuthModule,
     InventoryModule,
     ReservationModule,
@@ -29,6 +37,7 @@ import { SafeLockModule } from './safe-lock/safe-lock.module';
     AuditModule,
     HistoryModule,
     SafeLockModule,
+    EventsModule,
   ],
 })
 export class AppModule {}

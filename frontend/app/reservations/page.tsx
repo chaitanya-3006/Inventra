@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { getInventory, getMyReservations, getReservations } from '../../lib/api';
 import ReservationForm from '../../components/ReservationForm';
 import ReservationList from '../../components/ReservationList';
+import toast from 'react-hot-toast';
+import { useSocketEvents } from '@/lib/useSocketEvents';
 
 export interface InventoryItem {
   id: string;
@@ -41,9 +43,19 @@ export default function ReservationsPage() {
     }
   }, [user]);
 
+  useSocketEvents({
+    reservationUpdate: () => {
+      if (user) fetchAll();
+      toast('Reservation processing updated.', { icon: '🔄' });
+    },
+    inventoryUpdate: () => {
+      // Opt to silently update inventory in background
+      if (user) fetchAll();
+    }
+  });
+
   const fetchAll = async () => {
     setLoading(true);
-    setError('');
     try {
       const [invRes, resRes] = await Promise.all([
         getInventory(), 
@@ -52,7 +64,7 @@ export default function ReservationsPage() {
       setInventory(invRes.data?.data || []);
       setReservations(user?.role === 'admin' ? resRes.data?.data || [] : resRes.data || []);
     } catch {
-      setError('Failed to load data.');
+      toast.error('Failed to load data.');
     } finally {
       setLoading(false);
     }
@@ -69,12 +81,6 @@ export default function ReservationsPage() {
         <h1 className="text-2xl font-bold text-white">Reservations</h1>
         <p className="text-gray-400 text-sm mt-1">Reservations are auto-confirmed instantly when stock is available</p>
       </div>
-
-        {error && (
-          <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm mb-6">
-            {error}
-          </div>
-        )}
 
         {loading ? (
           <div className="flex items-center justify-center h-64">

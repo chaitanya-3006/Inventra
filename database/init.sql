@@ -14,13 +14,15 @@ CREATE TABLE inventory (
   name VARCHAR(255) NOT NULL,
   total_quantity INTEGER NOT NULL DEFAULT 0,
   reserved_quantity INTEGER NOT NULL DEFAULT 0,
-  available_quantity INTEGER GENERATED ALWAYS AS (total_quantity - reserved_quantity) STORED,
+  locked_quantity INTEGER NOT NULL DEFAULT 0,
+  available_quantity INTEGER GENERATED ALWAYS AS (total_quantity - reserved_quantity - locked_quantity) STORED,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT chk_quantities CHECK (
     total_quantity >= 0 AND
     reserved_quantity >= 0 AND
-    reserved_quantity <= total_quantity
+    locked_quantity >= 0 AND
+    (reserved_quantity + locked_quantity) <= total_quantity
   )
 );
 
