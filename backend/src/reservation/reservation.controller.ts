@@ -94,6 +94,7 @@ export class ReservationController {
       );
       return response.data;
     } catch (e: any) {
+      console.error('Proxy Error to Go Service:', e.message, e?.response?.data || '');
       throw new HttpException(
         'Could not fetch reservations',
         HttpStatus.INTERNAL_SERVER_ERROR,
