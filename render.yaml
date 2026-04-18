@@ -1,0 +1,72 @@
+databases:
+  - name: inventra-db
+    databaseName: reservationdb
+    user: appuser
+
+services:
+  - type: redis
+    name: inventra-redis
+
+  - type: web
+    name: go-service
+    env: docker
+    rootDir: reservation-service
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: inventra-db
+          property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USER
+        fromDatabase:
+          name: inventra-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: inventra-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: inventra-db
+          property: database
+
+  - type: web
+    name: nestjs-backend
+    env: docker
+    rootDir: backend
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: inventra-db
+          property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_USER
+        fromDatabase:
+          name: inventra-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: inventra-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: inventra-db
+          property: database
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: inventra-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: inventra-redis
+          property: port
+      - key: GO_SERVICE_URL
+        value: http://go-service:8081
+      - key: FRONTEND_URL
+        value: https://inventra-chi-nine.vercel.app
+      - key: JWT_SECRET
+        generateValue: true
