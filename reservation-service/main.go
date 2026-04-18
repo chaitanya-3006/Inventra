@@ -51,13 +51,18 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+
 	srv := &http.Server{
-		Addr:    ":8081",
+		Addr:    ":" + port,
 		Handler: r,
 	}
 
 	go func() {
-		log.Println("Go reservation service listening on :8081")
+		log.Printf("Go reservation service listening on :%s\n", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
