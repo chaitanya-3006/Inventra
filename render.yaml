@@ -1,6 +1,7 @@
 services:
   - type: web
     name: go-service
+    plan: free
     env: docker
     rootDir: reservation-service
     envVars:
@@ -19,6 +20,7 @@ services:
 
   - type: web
     name: nestjs-backend
+    plan: free
     env: docker
     rootDir: backend
     envVars:
