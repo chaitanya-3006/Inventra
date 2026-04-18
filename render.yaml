@@ -6,6 +6,7 @@ databases:
 services:
   - type: redis
     name: inventra-redis
+    ipAllowList: []
 
   - type: web
     name: go-service
