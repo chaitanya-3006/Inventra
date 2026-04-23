@@ -19,11 +19,4 @@ export class CancelDto {
   reservationId: string;
 }
 
-export class ExtendDto {
-  @IsUUID()
-  reservationId: string;
 
-  @IsInt()
-  @Min(1)
-  durationMinutes: number;
-}

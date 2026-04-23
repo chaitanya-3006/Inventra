@@ -47,17 +47,7 @@ func (s *ReservationService) Cancel(ctx context.Context, req models.CancelReques
 	return s.repo.Cancel(ctx, reservationID, userID, req.IsAdmin)
 }
 
-func (s *ReservationService) Extend(ctx context.Context, req models.ExtendRequest) (*models.Reservation, error) {
-	reservationID, err := uuid.Parse(req.ReservationID)
-	if err != nil {
-		return nil, err
-	}
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		return nil, err
-	}
-	return s.repo.Extend(ctx, reservationID, userID, req.DurationMinutes)
-}
+
 
 func (s *ReservationService) GetByUser(ctx context.Context, userIDStr string) ([]models.Reservation, error) {
 	userID, err := uuid.Parse(userIDStr)

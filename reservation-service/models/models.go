@@ -65,11 +65,7 @@ type CancelRequest struct {
 	IsAdmin       bool   `json:"is_admin"`
 }
 
-type ExtendRequest struct {
-	ReservationID   string `json:"reservation_id" binding:"required"`
-	UserID          string `json:"user_id"        binding:"required"`
-	DurationMinutes int    `json:"duration_minutes" binding:"required,min=1"`
-}
+
 
 type SafeLockRequest struct {
 	InventoryID string     `json:"inventory_id" binding:"required"`

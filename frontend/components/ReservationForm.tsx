@@ -60,7 +60,7 @@ export default function ReservationForm({ inventory, onSuccess }: Props) {
           return createReservation(sel.inventoryId, finalQuantity);
         })
       );
-      setSuccess('Reservations created! You have 15 minutes to confirm them.');
+      setSuccess('Reservations created successfully and instantly confirmed!');
       setSelections([{ inventoryId: '', quantity: 1 }]);
       onSuccess();
     } catch (err: any) {
@@ -179,9 +179,6 @@ export default function ReservationForm({ inventory, onSuccess }: Props) {
         </button>
       </form>
 
-      <div className="mt-4 pt-4 border-t border-gray-800 text-xs text-gray-500">
-        ⏱ Reservations expire after 15 minutes if not confirmed.
-      </div>
     </div>
   );
 }

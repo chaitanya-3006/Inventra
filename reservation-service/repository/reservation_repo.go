@@ -50,11 +50,12 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 		return nil, fmt.Errorf("insufficient stock: available=%d, requested=%d", available, req.Quantity)
 	}
 
-	// Create PENDING reservation: stock is available, so increase reserved_quantity.
-	// total_quantity stays the same until CONFIRMED.
+	// Auto-confirm: stock is available, so deduct immediately and mark CONFIRMED.
+	// total_quantity decreases (item is consumed), reserved_quantity stays net-zero
+	// (we never pass through PENDING, so no reserved bump needed).
 	_, err = tx.Exec(ctx,
 		`UPDATE inventory
-		 SET reserved_quantity = reserved_quantity + $1,
+		 SET total_quantity = total_quantity - $1,
 		     updated_at = NOW()
 		 WHERE id = $2`,
 		req.Quantity, inventoryID,
@@ -66,7 +67,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	var res models.Reservation
 	err = tx.QueryRow(ctx,
 		`INSERT INTO reservations (inventory_id, user_id, quantity, status, expires_at)
-		 VALUES ($1, $2, $3, 'PENDING', NOW() + INTERVAL '15 minutes')
+		 VALUES ($1, $2, $3, 'CONFIRMED', NOW() + INTERVAL '15 minutes')
 		 RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
 		inventoryID, userID, req.Quantity,
 	).Scan(
@@ -83,50 +84,6 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	}
 
 	return &res, nil
-}
-
-func (r *ReservationRepo) Extend(ctx context.Context, reservationID, userID uuid.UUID, durationMinutes int) (*models.Reservation, error) {
-	tx, err := db.Pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-
-	var res models.Reservation
-	err = tx.QueryRow(ctx,
-		`SELECT id, inventory_id, user_id, quantity, status, expires_at FROM reservations WHERE id = $1 AND user_id = $2 FOR UPDATE`,
-		reservationID, userID,
-	).Scan(&res.ID, &res.InventoryID, &res.UserID, &res.Quantity, &res.Status, &res.ExpiresAt)
-	
-	if err == pgx.ErrNoRows {
-		return nil, fmt.Errorf("reservation not found")
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	if res.Status != "PENDING" {
-		return nil, fmt.Errorf("only PENDING reservations can be extended, current status: %s", res.Status)
-	}
-	if time.Now().After(res.ExpiresAt) {
-		return nil, fmt.Errorf("reservation has already expired")
-	}
-
-	// Use INTERVAL '1 minute' * $2 to safely bind the integer value to a postgres interval
-	err = tx.QueryRow(ctx,
-		`UPDATE reservations SET expires_at = expires_at + (INTERVAL '1 minute' * $2), updated_at = NOW()
-     WHERE id = $1 RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
-		reservationID, durationMinutes,
-	).Scan(
-		&res.ID, &res.InventoryID, &res.UserID,
-		&res.Quantity, &res.Status, &res.ExpiresAt,
-		&res.CreatedAt, &res.UpdatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &res, tx.Commit(ctx)
 }
 
 func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uuid.UUID, isAdmin bool) (*models.Reservation, error) {

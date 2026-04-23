@@ -36,7 +36,7 @@ func main() {
 	r.POST("/reserve", handler.Reserve)
 	r.POST("/confirm", handler.Confirm)
 	r.POST("/cancel", handler.Cancel)
-	r.POST("/extend", handler.Extend)
+
 	r.GET("/reservations/user/:userID", handler.GetByUser)
 	r.GET("/reservations", handler.GetAll)
 
