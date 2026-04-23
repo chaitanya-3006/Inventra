@@ -56,7 +56,7 @@ func (s *ReservationService) Extend(ctx context.Context, req models.ExtendReques
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.Extend(ctx, reservationID, userID)
+	return s.repo.Extend(ctx, reservationID, userID, req.DurationMinutes)
 }
 
 func (s *ReservationService) GetByUser(ctx context.Context, userIDStr string) ([]models.Reservation, error) {

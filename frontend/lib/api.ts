@@ -38,8 +38,8 @@ export const confirmReservation = (reservationId: string) =>
   API.post('/reservation/confirm', { reservationId });
 export const cancelReservation = (reservationId: string) =>
   API.post('/reservation/cancel', { reservationId });
-export const extendReservation = (reservationId: string) =>
-  API.post('/reservation/extend', { reservationId });
+export const extendReservation = (reservationId: string, durationMinutes: number) =>
+  API.post('/reservation/extend', { reservationId, durationMinutes });
 export const getMyReservations = () => API.get('/reservation/user');
 export const getReservations = (params?: { page?: number; limit?: number; status?: string }) =>
   API.get('/reservations', { params }); // For admin view

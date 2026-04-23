@@ -115,11 +115,12 @@ export class ReservationProcessor extends WorkerHost {
   }
 
   private async processExtend(job: Job): Promise<any> {
-    const { reservationId, userId } = job.data;
+    const { reservationId, userId, durationMinutes } = job.data;
     try {
       const response = await axios.post(`${GO_SERVICE}/extend`, {
         reservation_id: reservationId,
         user_id: userId,
+        duration_minutes: durationMinutes,
       });
 
       await this.auditService.log({
@@ -127,7 +128,7 @@ export class ReservationProcessor extends WorkerHost {
         action: 'Reservation Extended',
         entityType: 'reservation',
         entityId: reservationId,
-        newValue: { action: 'Extended 15 minutes' },
+        newValue: { action: `Extended ${durationMinutes} minutes` },
       });
 
       this.eventsGateway.emitReservationUpdate();

@@ -22,4 +22,8 @@ export class CancelDto {
 export class ExtendDto {
   @IsUUID()
   reservationId: string;
+
+  @IsInt()
+  @Min(1)
+  durationMinutes: number;
 }

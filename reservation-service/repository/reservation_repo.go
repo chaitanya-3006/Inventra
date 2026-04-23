@@ -85,7 +85,7 @@ func (r *ReservationRepo) Reserve(ctx context.Context, req models.ReserveRequest
 	return &res, nil
 }
 
-func (r *ReservationRepo) Extend(ctx context.Context, reservationID, userID uuid.UUID) (*models.Reservation, error) {
+func (r *ReservationRepo) Extend(ctx context.Context, reservationID, userID uuid.UUID, durationMinutes int) (*models.Reservation, error) {
 	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -112,10 +112,11 @@ func (r *ReservationRepo) Extend(ctx context.Context, reservationID, userID uuid
 		return nil, fmt.Errorf("reservation has already expired")
 	}
 
+	// Use INTERVAL '1 minute' * $2 to safely bind the integer value to a postgres interval
 	err = tx.QueryRow(ctx,
-		`UPDATE reservations SET expires_at = expires_at + INTERVAL '15 minutes', updated_at = NOW()
+		`UPDATE reservations SET expires_at = expires_at + (INTERVAL '1 minute' * $2), updated_at = NOW()
      WHERE id = $1 RETURNING id, inventory_id, user_id, quantity, status, expires_at, created_at, updated_at`,
-		reservationID,
+		reservationID, durationMinutes,
 	).Scan(
 		&res.ID, &res.InventoryID, &res.UserID,
 		&res.Quantity, &res.Status, &res.ExpiresAt,

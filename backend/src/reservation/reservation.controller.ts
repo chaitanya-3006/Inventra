@@ -93,6 +93,7 @@ export class ReservationController {
       const job = await this.reservationQueue.add('process-extend', {
         reservationId: dto.reservationId,
         userId: req.user.userId,
+        durationMinutes: dto.durationMinutes,
       });
       console.log(`2. Added to the queue with Job ID: ${job?.id}`);
       return { message: 'Extend request queued', jobId: job.id };

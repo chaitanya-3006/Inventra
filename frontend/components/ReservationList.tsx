@@ -63,10 +63,18 @@ export default function ReservationList({ reservations, inventory, onAction, use
   };
 
   const handleExtend = async (id: string) => {
+    const minutesStr = window.prompt('Enter custom duration to extend (in minutes):', '15');
+    if (minutesStr === null) return; // User canceled
+    const minutes = parseInt(minutesStr, 10);
+    if (isNaN(minutes) || minutes <= 0) {
+      setError('Please enter a valid positive number for minutes.');
+      return;
+    }
+
     setError('');
     setActionLoading(id + '-extend');
     try {
-      await extendReservation(id);
+      await extendReservation(id, minutes);
       onAction(); // refresh list
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Extend failed');

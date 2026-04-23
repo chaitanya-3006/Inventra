@@ -66,8 +66,9 @@ type CancelRequest struct {
 }
 
 type ExtendRequest struct {
-	ReservationID string `json:"reservation_id" binding:"required"`
-	UserID        string `json:"user_id"        binding:"required"`
+	ReservationID   string `json:"reservation_id" binding:"required"`
+	UserID          string `json:"user_id"        binding:"required"`
+	DurationMinutes int    `json:"duration_minutes" binding:"required,min=1"`
 }
 
 type SafeLockRequest struct {
