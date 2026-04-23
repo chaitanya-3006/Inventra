@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { login, register } from '../../lib/api';
 import { useAuth } from '@/lib/auth-context';
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Lock, User, ArrowRight, Sparkles, Key, Loader2 } from 'lucide-react';
 
 type Tab = 'signin' | 'register';
@@ -67,7 +67,7 @@ export default function LoginPage() {
     }
   };
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -75,7 +75,7 @@ export default function LoginPage() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
