@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cancelReservation } from '../lib/api';
+import { cancelReservation, extendReservation } from '../lib/api';
 
 interface InventoryItem {
   id: string;
@@ -62,6 +62,19 @@ export default function ReservationList({ reservations, inventory, onAction, use
     }
   };
 
+  const handleExtend = async (id: string) => {
+    setError('');
+    setActionLoading(id + '-extend');
+    try {
+      await extendReservation(id);
+      onAction(); // refresh list
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Extend failed');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
@@ -100,17 +113,26 @@ export default function ReservationList({ reservations, inventory, onAction, use
                     <span>Created: <span className="text-gray-300">{formatTime(res.created_at)}</span></span>
                   </div>
                 </div>
-                {res.status === 'CONFIRMED' && (
                   <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => handleCancel(res.id)}
-                      disabled={!!actionLoading}
-                      className="px-3 py-1.5 bg-gray-700 hover:bg-red-800 disabled:bg-gray-700 text-gray-300 hover:text-red-300 text-xs font-medium rounded-lg transition"
-                    >
-                      {actionLoading === res.id + '-cancel' ? '...' : 'Cancel'}
-                    </button>
+                    {res.status === 'PENDING' && (
+                      <button
+                        onClick={() => handleExtend(res.id)}
+                        disabled={!!actionLoading}
+                        className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 text-white hover:text-white text-xs font-medium rounded-lg transition"
+                      >
+                        {actionLoading === res.id + '-extend' ? '...' : 'Extend Time'}
+                      </button>
+                    )}
+                    {res.status === 'CONFIRMED' && (
+                      <button
+                        onClick={() => handleCancel(res.id)}
+                        disabled={!!actionLoading}
+                        className="px-3 py-1.5 bg-gray-700 hover:bg-red-800 disabled:bg-gray-700 text-gray-300 hover:text-red-300 text-xs font-medium rounded-lg transition"
+                      >
+                        {actionLoading === res.id + '-cancel' ? '...' : 'Cancel'}
+                      </button>
+                    )}
                   </div>
-                )}
               </div>
             </div>
           ))}

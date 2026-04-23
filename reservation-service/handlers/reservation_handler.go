@@ -93,6 +93,23 @@ func (h *ReservationHandler) Cancel(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (h *ReservationHandler) Extend(c *gin.Context) {
+	var req models.ExtendRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	log.Printf("Go Service: Processing Extend request: %+v", req)
+	res, err := h.svc.Extend(c.Request.Context(), req)
+	if err != nil {
+		log.Printf("Go Service: Extend request failed: %v", err)
+		c.JSON(getErrorStatus(err), gin.H{"error": err.Error()})
+		return
+	}
+	log.Printf("Go Service: Extend request completed successfully")
+	c.JSON(http.StatusOK, res)
+}
+
 func (h *ReservationHandler) GetByUser(c *gin.Context) {
 	userID := c.Param("userID")
 	reservations, err := h.svc.GetByUser(c.Request.Context(), userID)

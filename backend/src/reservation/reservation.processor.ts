@@ -23,6 +23,8 @@ export class ReservationProcessor extends WorkerHost {
         return this.processConfirm(job);
       case 'process-cancel':
         return this.processCancel(job);
+      case 'process-extend':
+        return this.processExtend(job);
       default:
         throw new Error(`Unknown job name: ${job.name}`);
     }
@@ -39,7 +41,7 @@ export class ReservationProcessor extends WorkerHost {
 
       await this.auditService.log({
         userId: userId,
-        action: 'Reservation Auto-Confirmed',
+        action: 'Reservation Created (Pending)',
         entityType: 'reservation',
         entityId: inventoryId,
         newValue: dto,
@@ -108,6 +110,30 @@ export class ReservationProcessor extends WorkerHost {
       return response.data;
     } catch (error) {
       console.error('Cancel job failed', error);
+      throw error;
+    }
+  }
+
+  private async processExtend(job: Job): Promise<any> {
+    const { reservationId, userId } = job.data;
+    try {
+      const response = await axios.post(`${GO_SERVICE}/extend`, {
+        reservation_id: reservationId,
+        user_id: userId,
+      });
+
+      await this.auditService.log({
+        userId: userId,
+        action: 'Reservation Extended',
+        entityType: 'reservation',
+        entityId: reservationId,
+        newValue: { action: 'Extended 15 minutes' },
+      });
+
+      this.eventsGateway.emitReservationUpdate();
+      return response.data;
+    } catch (error) {
+      console.error('Extend job failed', error);
       throw error;
     }
   }

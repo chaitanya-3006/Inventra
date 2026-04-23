@@ -18,3 +18,8 @@ export class CancelDto {
   @IsUUID()
   reservationId: string;
 }
+
+export class ExtendDto {
+  @IsUUID()
+  reservationId: string;
+}

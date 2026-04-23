@@ -17,7 +17,7 @@ interface Props {
 
 export default function ReservationForm({ inventory, onSuccess }: Props) {
   const [inventoryId, setInventoryId] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | ''>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -31,7 +31,8 @@ export default function ReservationForm({ inventory, onSuccess }: Props) {
     setSuccess('');
     setLoading(true);
     try {
-      await createReservation(inventoryId, quantity);
+      const finalQuantity = typeof quantity === 'number' ? quantity : 1;
+      await createReservation(inventoryId, finalQuantity);
       setSuccess('Reservation created! You have 15 minutes to confirm it.');
       setInventoryId('');
       setQuantity(1);
@@ -85,8 +86,11 @@ export default function ReservationForm({ inventory, onSuccess }: Props) {
             type="number"
             min={1}
             max={selectedItem?.availableQuantity || undefined}
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            value={quantity === '' ? '' : quantity}
+            onChange={(e) => {
+              const val = e.target.value;
+              setQuantity(val === '' ? '' : parseInt(val, 10));
+            }}
             required
             className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
           />

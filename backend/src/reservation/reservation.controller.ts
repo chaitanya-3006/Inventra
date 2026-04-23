@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ReserveDto, ConfirmDto, CancelDto } from './dto/reserve.dto';
+import { ReserveDto, ConfirmDto, CancelDto, ExtendDto } from './dto/reserve.dto';
 import axios from 'axios';
 import { AuditService } from '../audit/audit.service';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -81,6 +81,24 @@ export class ReservationController {
     } catch (e: any) {
       throw new HttpException(
         'Failed to queue cancel',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('extend')
+  async extend(@Body() dto: ExtendDto, @Request() req: any) {
+    try {
+      console.log(`1. Request created for user ID: ${req.user.userId}`);
+      const job = await this.reservationQueue.add('process-extend', {
+        reservationId: dto.reservationId,
+        userId: req.user.userId,
+      });
+      console.log(`2. Added to the queue with Job ID: ${job?.id}`);
+      return { message: 'Extend request queued', jobId: job.id };
+    } catch (e: any) {
+      throw new HttpException(
+        'Failed to queue extend',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
