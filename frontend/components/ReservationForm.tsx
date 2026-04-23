@@ -2,6 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 import { createReservation } from '../lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, X, Box, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface InventoryItem {
   id: string;
@@ -18,28 +20,25 @@ interface Props {
 interface Selection {
   inventoryId: string;
   quantity: number | '';
+  id: string; // unique ID for framer-motion AnimatePresence
 }
 
 export default function ReservationForm({ inventory, onSuccess }: Props) {
-  const [selections, setSelections] = useState<Selection[]>([{ inventoryId: '', quantity: 1 }]);
+  const [selections, setSelections] = useState<Selection[]>([{ inventoryId: '', quantity: 1, id: Date.now().toString() }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const handleAddMore = () => {
-    setSelections([...selections, { inventoryId: '', quantity: 1 }]);
+    setSelections([...selections, { inventoryId: '', quantity: 1, id: Date.now().toString() }]);
   };
 
-  const handleRemove = (index: number) => {
-    const newSelections = [...selections];
-    newSelections.splice(index, 1);
-    setSelections(newSelections);
+  const handleRemove = (id: string) => {
+    setSelections(selections.filter(s => s.id !== id));
   };
 
-  const updateSelection = (index: number, field: keyof Selection, value: string | number) => {
-    const newSelections = [...selections];
-    newSelections[index] = { ...newSelections[index], [field]: value };
-    setSelections(newSelections);
+  const updateSelection = (id: string, field: keyof Selection, value: string | number) => {
+    setSelections(selections.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -61,8 +60,11 @@ export default function ReservationForm({ inventory, onSuccess }: Props) {
         })
       );
       setSuccess('Reservations created successfully and instantly confirmed!');
-      setSelections([{ inventoryId: '', quantity: 1 }]);
-      onSuccess();
+      setTimeout(() => {
+        setSelections([{ inventoryId: '', quantity: 1, id: Date.now().toString() }]);
+        setSuccess('');
+        onSuccess();
+      }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Reservation failed');
     } finally {
@@ -71,114 +73,159 @@ export default function ReservationForm({ inventory, onSuccess }: Props) {
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-      <h2 className="text-white font-semibold text-lg mb-5 flex items-center justify-between">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#0f0f11] border border-gray-800/60 rounded-3xl p-6 shadow-2xl relative overflow-hidden"
+    >
+      {/* Decorative gradient blur */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 blur-[80px] pointer-events-none" />
+
+      <h2 className="text-white font-semibold text-lg mb-6 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          New Reservation
+          <div className="p-2 bg-brand-500/10 rounded-lg text-brand-400">
+            <Box className="w-5 h-5" />
+          </div>
+          New Reservation Request
         </div>
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {selections.map((selection, index) => {
-          const selectedItem = inventory.find((i) => i.id === selection.inventoryId);
-          return (
-            <div key={index} className="space-y-4 p-4 border border-gray-800 bg-gray-800/20 rounded-xl relative">
-              {selections.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  className="absolute top-4 right-4 text-gray-500 hover:text-red-400 transition"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Select Item</label>
-                <select
-                  value={selection.inventoryId}
-                  onChange={(e) => updateSelection(index, 'inventoryId', e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition pr-10"
-                >
-                  <option value="">Choose inventory item...</option>
-                  {inventory.map((item) => (
-                    <option key={item.id} value={item.id} disabled={item.availableQuantity === 0}>
-                      {item.sku} — {item.name} ({item.availableQuantity} available)
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+        <AnimatePresence mode="popLayout">
+          {selections.map((selection, index) => {
+            const selectedItem = inventory.find((i) => i.id === selection.inventoryId);
+            return (
+              <motion.div 
+                layout
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                key={selection.id} 
+                className="group space-y-4 p-5 bg-gray-900/50 hover:bg-gray-800/40 border border-gray-800 hover:border-gray-700/80 rounded-2xl relative transition-all duration-300"
+              >
+                {selections.length > 1 && (
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button"
+                    onClick={() => handleRemove(selection.id)}
+                    className="absolute top-4 right-4 p-1 text-gray-500 hover:text-red-400 bg-gray-900 rounded-full border border-gray-800 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Select Item</label>
+                    <select
+                      value={selection.inventoryId}
+                      onChange={(e) => updateSelection(selection.id, 'inventoryId', e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-gray-950/50 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="">Choose inventory item...</option>
+                      {inventory.map((item) => (
+                        <option key={item.id} value={item.id} disabled={item.availableQuantity === 0}>
+                          {item.sku} — {item.name} ({item.availableQuantity} available)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {selectedItem && (
-                <div className="bg-gray-800/50 rounded-xl px-4 py-3 text-sm text-gray-300">
-                  <span className="text-gray-400">Available: </span>
-                  <span className={`font-semibold ${selectedItem.availableQuantity > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {selectedItem.availableQuantity}
-                  </span>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={selectedItem?.availableQuantity || undefined}
+                      value={selection.quantity === '' ? '' : selection.quantity}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateSelection(selection.id, 'quantity', val === '' ? '' : parseInt(val, 10));
+                      }}
+                      required
+                      className="w-full px-4 py-3 bg-gray-950/50 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+                    />
+                  </div>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={selectedItem?.availableQuantity || undefined}
-                  value={selection.quantity === '' ? '' : selection.quantity}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateSelection(index, 'quantity', val === '' ? '' : parseInt(val, 10));
-                  }}
-                  required
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
-                />
-              </div>
-            </div>
-          );
-        })}
+                {/* Progress bar visualizing stock level */}
+                {selectedItem && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4">
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-gray-500">Available Stock</span>
+                      <span className={`font-semibold ${selectedItem.availableQuantity > 10 ? 'text-green-400' : 'text-orange-400'}`}>
+                        {selectedItem.availableQuantity} units
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-950 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (selectedItem.availableQuantity / 100) * 100)}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className={`h-full rounded-full ${selectedItem.availableQuantity > 10 ? 'bg-green-500' : 'bg-orange-500'}`}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
           type="button"
           onClick={handleAddMore}
-          className="w-full py-2 px-4 border border-dashed border-gray-600 hover:border-gray-400 text-gray-400 hover:text-white text-sm font-medium rounded-xl transition-all duration-200"
+          className="w-full py-3 px-4 border border-dashed border-gray-700/60 hover:border-brand-500/50 hover:bg-brand-500/5 text-gray-400 hover:text-brand-300 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
         >
-          + Add More Items
-        </button>
+          <Plus className="w-4 h-4" /> Add Another Item
+        </motion.button>
 
-        {error && (
-          <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-3 text-red-300 text-sm">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-900/30 border border-green-700/50 rounded-xl px-4 py-3 text-green-300 text-sm">
-            {success}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm"
+            >
+              {error}
+            </motion.div>
+          )}
+          {success && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-green-400 text-sm flex items-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           type="submit"
           disabled={loading || !selections.some((s) => s.inventoryId)}
-          className="w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-brand-600/20"
+          className="w-full relative group overflow-hidden py-4 px-4 bg-white hover:bg-gray-100 disabled:bg-gray-700 disabled:text-gray-400 text-black font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.05)] mt-4"
         >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] group-hover:animate-[shimmer_1.5s_infinite]" />
+          
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Reserving...
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Processing...
             </span>
-          ) : 'Reserve All'}
-        </button>
+          ) : 'Reserve All Items'}
+        </motion.button>
       </form>
-
-    </div>
+    </motion.div>
   );
 }
