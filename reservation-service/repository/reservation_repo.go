@@ -115,7 +115,7 @@ func (r *ReservationRepo) Confirm(ctx context.Context, reservationID, userID uui
 	if res.Status != "PENDING" {
 		return nil, fmt.Errorf("reservation is not in PENDING state, current status: %s", res.Status)
 	}
-	if time.Now().After(res.ExpiresAt) {
+	if res.ExpiresAt != nil && time.Now().After(*res.ExpiresAt) {
 		return nil, fmt.Errorf("reservation has expired")
 	}
 
