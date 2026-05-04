@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getAuditLogs } from '@/lib/api';
 import AuditLogTable from '@/components/AuditLogTable';
-import SearchBar from '@/components/SearchBar';
 import Pagination from '@/components/Pagination';
 import FilterBar from '@/components/FilterBar';
 import toast from 'react-hot-toast';
@@ -227,14 +226,6 @@ export default function AuditLogPage() {
           <div className="flex-1">
             <div className="mb-4">
               <h2 className="text-xl font-bold text-white">Activity Log</h2>
-              <SearchBar 
-                placeholder="Search ID or SKU" 
-                value={filters.searchTerm}
-                onChange={(e) => {
-                  setFilters(prev => ({ ...prev, searchTerm: e.target.value }));
-                  setPage(1);
-                }}
-              />
             </div>
 
             {loading ? (

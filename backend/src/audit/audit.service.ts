@@ -43,7 +43,7 @@ export class AuditService {
 
     if (filters?.search) {
       query.andWhere(
-        '(audit.entityId::text ILIKE :search OR audit.entityType ILIKE :search)',
+        '(audit.entityId ILIKE :search OR audit.entityType ILIKE :search)',
         { search: `%${filters.search}%` }
       );
     }
