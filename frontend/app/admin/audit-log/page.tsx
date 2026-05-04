@@ -131,7 +131,7 @@ export default function AuditLogPage() {
 
           {/* Filters Section - customized for audit log */}
           <div className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Action Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Action</label>
@@ -168,7 +168,7 @@ export default function AuditLogPage() {
               </div>
 
               {/* Date Range */}
-              <div className="col-span-2 lg:col-span-1">
+              <div className="col-span-1 md:col-span-2 lg:col-span-2">
                 <label className="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
                 <div className="flex items-center gap-2">
                   <input
@@ -194,7 +194,7 @@ export default function AuditLogPage() {
               </div>
 
               {/* Search */}
-              <div className="col-span-2 lg:col-span-1">
+              <div className="col-span-1 md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-gray-400 mb-1">Search</label>
                 <div className="flex items-center gap-2">
                   <input
@@ -211,7 +211,7 @@ export default function AuditLogPage() {
               </div>
 
               {/* Apply Button */}
-              <div className="col-span-1 lg:col-span-4 flex justify-end mt-4 md:mt-0">
+              <div className="col-span-1 md:col-span-2 lg:col-span-5 flex justify-end mt-4 md:mt-0">
                 <button
                   onClick={fetchData}
                   className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition"
