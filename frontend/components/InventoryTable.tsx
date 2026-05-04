@@ -7,6 +7,7 @@ interface InventoryItem {
   totalQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;
+  imageUrl?: string;
   updatedAt: string;
 }
 
@@ -31,6 +32,7 @@ export default function InventoryTable({ items, onReserve, isAdmin = false }: Pr
         <table className="w-full">
           <thead>
             <tr className="bg-gray-800/50 text-left text-gray-400 text-sm">
+              <th className="px-4 py-3 font-medium">Image</th>
               <th className="px-4 py-3 font-medium">SKU</th>
               <th className="px-4 py-3 font-medium">Item Name</th>
               <th className="px-4 py-3 font-medium text-right">Total Qty</th>
@@ -44,6 +46,13 @@ export default function InventoryTable({ items, onReserve, isAdmin = false }: Pr
           <tbody className="divide-y divide-gray-800">
             {items.map(item => (
               <tr key={item.id} className="hover:bg-gray-800/30 transition">
+                <td className="px-4 py-4">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                  ) : (
+                    <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-500">No Img</div>
+                  )}
+                </td>
                 <td className="px-4 py-4">
                   <span className="text-white font-medium">{item.sku}</span>
                 </td>

@@ -25,9 +25,16 @@ export const register = (username: string, password: string) =>
 export const getInventoryStats = () => API.get('/inventory/stats');
 export const getInventory = (params?: { page?: number; limit?: number; search?: string }) =>
   API.get('/inventory', { params });
-export const createInventory = (data: { sku: string; name: string; totalQuantity: number }) =>
+export const uploadInventoryImage = (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return API.post('/inventory/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+export const createInventory = (data: { sku: string; name: string; totalQuantity: number; imageUrl?: string }) =>
   API.post('/inventory', data);
-export const updateInventory = (id: string, data: { name?: string; totalQuantity?: number }) =>
+export const updateInventory = (id: string, data: { name?: string; totalQuantity?: number; imageUrl?: string }) =>
   API.put(`/inventory/${id}`, data);
 export const deleteInventory = (id: string) => API.delete(`/inventory/${id}`);
 

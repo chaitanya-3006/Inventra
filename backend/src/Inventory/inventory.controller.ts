@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { InventoryService } from './inventory.service';
+import { CloudinaryService } from './cloudinary.service';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -7,7 +9,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('inventory')
 @UseGuards(JwtAuthGuard)
 export class InventoryController {
-  constructor(private inventoryService: InventoryService) {}
+  constructor(
+    private inventoryService: InventoryService,
+    private cloudinaryService: CloudinaryService
+  ) {}
 
   @Get()
   async findAll(
@@ -39,6 +44,16 @@ export class InventoryController {
   @Post()
   create(@Body() dto: CreateInventoryDto, @Request() req: any) {
     return this.inventoryService.create(dto, req.user.userId);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const result = await this.cloudinaryService.uploadImage(file);
+    return { url: result.secure_url };
   }
 
   @Put(':id')

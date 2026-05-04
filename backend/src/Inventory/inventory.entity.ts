@@ -23,6 +23,9 @@ export class Inventory {
   @Column({ name: 'available_quantity', select: true, insert: false, update: false })
   availableQuantity: number;
 
+  @Column({ name: 'image_url', nullable: true })
+  imageUrl: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

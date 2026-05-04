@@ -16,6 +16,7 @@ CREATE TABLE inventory (
   reserved_quantity INTEGER NOT NULL DEFAULT 0,
   locked_quantity INTEGER NOT NULL DEFAULT 0,
   available_quantity INTEGER GENERATED ALWAYS AS (total_quantity - reserved_quantity - locked_quantity) STORED,
+  image_url VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT chk_quantities CHECK (

@@ -93,7 +93,7 @@ export class InventoryService {
   findAllForSelection() {
     return this.repo
       .createQueryBuilder('inventory')
-      .select(['inventory.id', 'inventory.sku', 'inventory.name', 'inventory.availableQuantity'])
+      .select(['inventory.id', 'inventory.sku', 'inventory.name', 'inventory.availableQuantity', 'inventory.imageUrl'])
       .where('inventory.availableQuantity > 0')
       .orderBy('inventory.name', 'ASC')
       .getMany();

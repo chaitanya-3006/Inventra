@@ -6,6 +6,7 @@ import {
   createInventory,
   updateInventory,
   deleteInventory,
+  uploadInventoryImage,
 } from '../lib/api';
 import API from '../lib/api';
 
@@ -16,6 +17,7 @@ interface InventoryItem {
   totalQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;
+  imageUrl?: string;
   updatedAt: string;
 }
 
@@ -39,6 +41,7 @@ export default function AdminPanel() {
   const [newSku, setNewSku] = useState('');
   const [newName, setNewName] = useState('');
   const [newQty, setNewQty] = useState(0);
+  const [newFile, setNewFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
 
@@ -80,11 +83,17 @@ export default function AdminPanel() {
     setSuccess('');
     setCreating(true);
     try {
-      await createInventory({ sku: newSku, name: newName, totalQuantity: newQty });
+      let imageUrl;
+      if (newFile) {
+        const uploadRes = await uploadInventoryImage(newFile);
+        imageUrl = uploadRes.data.url;
+      }
+      await createInventory({ sku: newSku, name: newName, totalQuantity: newQty, imageUrl });
       setSuccess(`Created ${newSku} successfully!`);
       setNewSku('');
       setNewName('');
       setNewQty(0);
+      setNewFile(null);
       fetchAll();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create inventory item');
@@ -185,13 +194,21 @@ export default function AdminPanel() {
             required
             className="px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
           />
-          <button
-            type="submit"
-            disabled={creating}
-            className="py-3 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 text-white font-semibold rounded-xl transition shadow-lg shadow-brand-600/20"
-          >
-            {creating ? 'Creating...' : 'Create'}
-          </button>
+          <div className="md:col-span-4 flex items-center gap-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setNewFile(e.target.files?.[0] || null)}
+              className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-brand-400 hover:file:bg-gray-700 transition"
+            />
+            <button
+              type="submit"
+              disabled={creating}
+              className="py-3 px-6 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 text-white font-semibold rounded-xl transition shadow-lg shadow-brand-600/20 ml-auto"
+            >
+              {creating ? 'Creating...' : 'Create'}
+            </button>
+          </div>
         </form>
       </div>
 
@@ -204,6 +221,7 @@ export default function AdminPanel() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
+                <th className="text-left px-6 py-4 text-gray-400 font-medium">Image</th>
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">SKU</th>
                 <th className="text-left px-6 py-4 text-gray-400 font-medium">Name</th>
                 <th className="text-right px-6 py-4 text-gray-400 font-medium">Total</th>
@@ -215,6 +233,13 @@ export default function AdminPanel() {
             <tbody className="divide-y divide-gray-800">
               {inventory.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-800/50 transition">
+                  <td className="px-6 py-4">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-500">No Img</div>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <span className="font-mono text-brand-400 text-xs bg-brand-900/20 px-2 py-1 rounded">
                       {item.sku}

@@ -9,4 +9,8 @@ export class UpdateInventoryDto {
   @IsInt()
   @Min(0)
   totalQuantity?: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
