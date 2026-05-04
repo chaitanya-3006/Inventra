@@ -14,10 +14,11 @@ interface InventoryItem {
 interface Props {
   items: InventoryItem[];
   onReserve: (item: InventoryItem) => void;
+  onUpdate?: (item: InventoryItem) => void;
   isAdmin?: boolean;
 }
 
-export default function InventoryTable({ items, onReserve, isAdmin = false }: Props) {
+export default function InventoryTable({ items, onReserve, onUpdate, isAdmin = false }: Props) {
   if (items.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
@@ -40,7 +41,7 @@ export default function InventoryTable({ items, onReserve, isAdmin = false }: Pr
               <th className="px-4 py-3 font-medium text-right">Available</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium text-right">Last Updated</th>
-              {!isAdmin && <th className="px-4 py-3 font-medium text-center">Action</th>}
+              <th className="px-4 py-3 font-medium text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
@@ -89,8 +90,15 @@ export default function InventoryTable({ items, onReserve, isAdmin = false }: Pr
                     })}
                   </span>
                 </td>
-                {!isAdmin && (
-                  <td className="px-4 py-4 text-center">
+                <td className="px-4 py-4 text-center">
+                  {isAdmin ? (
+                    <button
+                      onClick={() => onUpdate && onUpdate(item)}
+                      className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium rounded-lg transition"
+                    >
+                      Update Stock
+                    </button>
+                  ) : (
                     <button
                       onClick={() => onReserve(item)}
                       disabled={item.availableQuantity === 0}
@@ -98,8 +106,8 @@ export default function InventoryTable({ items, onReserve, isAdmin = false }: Pr
                     >
                       Reserve
                     </button>
-                  </td>
-                )}
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

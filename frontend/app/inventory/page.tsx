@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getInventoryStats, getInventory, createInventory } from '../../lib/api';
+import { getInventoryStats, getInventory, createInventory, uploadInventoryImage, updateInventory } from '../../lib/api';
 import StatCard from '@/components/StatCard';
 import InventoryTable from '@/components/InventoryTable';
 import SearchBar from '@/components/SearchBar';
@@ -18,6 +18,7 @@ interface InventoryItem {
   totalQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;
+  imageUrl?: string;
   updatedAt: string;
 }
 
@@ -44,7 +45,13 @@ export default function InventoryPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newItem, setNewItem] = useState({ sku: '', name: '', totalQuantity: 1 });
+  const [newFile, setNewFile] = useState<File | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
+
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [updateItemData, setUpdateItemData] = useState<InventoryItem | null>(null);
+  const [updateFile, setUpdateFile] = useState<File | null>(null);
+  const [updateLoading, setUpdateLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -84,15 +91,48 @@ export default function InventoryPage() {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      await createInventory(newItem);
+      let imageUrl;
+      if (newFile) {
+        const uploadRes = await uploadInventoryImage(newFile);
+        imageUrl = uploadRes.data.url;
+      }
+      await createInventory({ ...newItem, imageUrl });
       toast.success('Inventory item created successfully!');
       setIsCreateOpen(false);
       setNewItem({ sku: '', name: '', totalQuantity: 1 });
+      setNewFile(null);
       fetchData();
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to create item');
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateItemData) return;
+    setUpdateLoading(true);
+    try {
+      let imageUrl = updateItemData.imageUrl;
+      if (updateFile) {
+        const uploadRes = await uploadInventoryImage(updateFile);
+        imageUrl = uploadRes.data.url;
+      }
+      await updateInventory(updateItemData.id, { 
+        name: updateItemData.name, 
+        totalQuantity: updateItemData.totalQuantity, 
+        imageUrl 
+      });
+      toast.success('Inventory item updated successfully!');
+      setIsUpdateOpen(false);
+      setUpdateItemData(null);
+      setUpdateFile(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to update item');
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
@@ -218,6 +258,11 @@ export default function InventoryPage() {
                 <InventoryTable 
                   items={items} 
                   onReserve={() => router.push('/reservations')}
+                  onUpdate={(item) => {
+                    setUpdateItemData(item);
+                    setUpdateFile(null);
+                    setIsUpdateOpen(true);
+                  }}
                   isAdmin={user?.role === 'admin'}
                 />
                 
@@ -290,6 +335,15 @@ export default function InventoryPage() {
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Image (Optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setNewFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-brand-400"
+                />
+              </div>
 
               <div className="flex justify-end gap-3 mt-6">
                 <button
@@ -305,6 +359,70 @@ export default function InventoryPage() {
                   className="px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 text-white rounded-lg transition"
                 >
                   {createLoading ? 'Creating...' : 'Create Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Update Modal overlay */}
+      {isUpdateOpen && updateItemData && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Update Stock: {updateItemData.sku}</h2>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Product Name</label>
+                <input
+                  type="text"
+                  required
+                  value={updateItemData.name}
+                  onChange={e => setUpdateItemData({...updateItemData, name: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Total Quantity</label>
+                <input
+                  type="number"
+                  min={updateItemData.reservedQuantity}
+                  required
+                  value={updateItemData.totalQuantity}
+                  onChange={e => setUpdateItemData({...updateItemData, totalQuantity: parseInt(e.target.value) || 0})}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                />
+                <p className="text-xs text-gray-500 mt-1">Minimum: {updateItemData.reservedQuantity} (Reserved Quantity)</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Update Image</label>
+                {updateItemData.imageUrl && !updateFile && (
+                  <div className="mb-2">
+                    <img src={updateItemData.imageUrl} alt="Current" className="w-16 h-16 object-cover rounded" />
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setUpdateFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-brand-400"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsUpdateOpen(false)}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateLoading}
+                  className="px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:bg-gray-700 text-white rounded-lg transition"
+                >
+                  {updateLoading ? 'Updating...' : 'Update Stock'}
                 </button>
               </div>
             </form>
