@@ -48,6 +48,7 @@ export default function AdminPanel() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editQty, setEditQty] = useState(0);
+  const [editFile, setEditFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -106,14 +107,21 @@ export default function AdminPanel() {
     setEditId(item.id);
     setEditName(item.name);
     setEditQty(item.totalQuantity);
+    setEditFile(null);
   };
 
   const handleSave = async (id: string) => {
     setSaving(true);
     setError('');
     try {
-      await updateInventory(id, { name: editName, totalQuantity: editQty });
+      let imageUrl;
+      if (editFile) {
+        const uploadRes = await uploadInventoryImage(editFile);
+        imageUrl = uploadRes.data.url;
+      }
+      await updateInventory(id, { name: editName, totalQuantity: editQty, imageUrl });
       setEditId(null);
+      setEditFile(null);
       fetchAll();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Update failed');
@@ -234,7 +242,19 @@ export default function AdminPanel() {
               {inventory.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-800/50 transition">
                   <td className="px-6 py-4">
-                    {item.imageUrl ? (
+                    {editId === item.id ? (
+                      <div className="flex flex-col gap-2">
+                        {item.imageUrl && !editFile && (
+                          <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+                          className="w-32 text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-800 file:text-brand-400"
+                        />
+                      </div>
+                    ) : item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
                     ) : (
                       <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-500">No Img</div>
@@ -294,7 +314,7 @@ export default function AdminPanel() {
                           onClick={() => startEdit(item)}
                           className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-medium rounded-lg transition"
                         >
-                          Edit
+                          Update Stock
                         </button>
                         <button
                           onClick={() => handleDelete(item.id, item.sku)}
