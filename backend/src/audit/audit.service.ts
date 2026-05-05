@@ -43,7 +43,7 @@ export class AuditService {
 
     if (filters?.search) {
       query.andWhere(
-        '(CAST(audit.id AS varchar) ILIKE :search OR CAST(audit.entityId AS varchar) ILIKE :search OR CAST(audit.entityType AS varchar) ILIKE :search)',
+        '(CAST(audit.id AS varchar) ILIKE :search OR CAST(audit.entityId AS varchar) ILIKE :search OR CAST(audit.entityType AS varchar) ILIKE :search OR CAST(audit.oldValue AS text) ILIKE :search OR CAST(audit.newValue AS text) ILIKE :search)',
         { search: `%${filters.search}%` }
       );
     }
