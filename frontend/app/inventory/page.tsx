@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getInventoryStats, getInventory, createInventory, uploadInventoryImage, updateInventory } from '../../lib/api';
+import { getInventoryStats, getInventory, createInventory, uploadInventoryImage, updateInventory, deleteInventory } from '../../lib/api';
 import StatCard from '@/components/StatCard';
 import InventoryTable from '@/components/InventoryTable';
 import SearchBar from '@/components/SearchBar';
@@ -136,6 +136,17 @@ export default function InventoryPage() {
     }
   };
 
+  const handleDelete = async (item: InventoryItem) => {
+    if (!confirm(`Are you sure you want to delete ${item.name} (${item.sku})? This will remove it entirely.`)) return;
+    try {
+      await deleteInventory(item.id);
+      toast.success('Inventory item deleted successfully!');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Failed to delete item');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-y-auto p-6">
       <div className="flex items-center justify-between mb-6">
@@ -263,6 +274,7 @@ export default function InventoryPage() {
                     setUpdateFile(null);
                     setIsUpdateOpen(true);
                   }}
+                  onDelete={handleDelete}
                   isAdmin={user?.role === 'admin'}
                 />
                 
