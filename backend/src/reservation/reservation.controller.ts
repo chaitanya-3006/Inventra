@@ -15,8 +15,6 @@ import axios from 'axios';
 import { AuditService } from '../audit/audit.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { DataSource } from 'typeorm';
-import { History } from '../history/history.entity';
 
 const GO_SERVICE = process.env.GO_SERVICE_URL || 'http://go-service:8081';
 
@@ -26,7 +24,6 @@ export class ReservationController {
   constructor(
     private auditService: AuditService,
     @InjectQueue('reservation-queue') private reservationQueue: Queue,
-    private dataSource: DataSource,
   ) {}
 
   @Post()
@@ -92,20 +89,10 @@ export class ReservationController {
   @Get('user')
   async getMyReservations(@Request() req: any) {
     try {
-      const qb = this.dataSource.getRepository(History).createQueryBuilder('res');
-      qb.where('res.userId = :userId', { userId: req.user.userId });
-      qb.orderBy('res.createdAt', 'DESC');
-      const data = await qb.getMany();
-      return data.map(item => ({
-        id: item.id,
-        inventory_id: item.inventoryId,
-        user_id: item.userId,
-        quantity: item.quantity,
-        status: item.status,
-        expires_at: item.expiresAt,
-        created_at: item.createdAt,
-        updated_at: item.updatedAt
-      }));
+      const response = await axios.get(
+        `${GO_SERVICE}/reservations/user/${req.user.userId}`,
+      );
+      return response.data;
     } catch (e: any) {
       console.error('Error fetching user reservations:', e);
       throw new HttpException(
@@ -119,8 +106,6 @@ export class ReservationController {
 @Controller('reservations')
 @UseGuards(JwtAuthGuard)
 export class ReservationsController {
-  constructor(private dataSource: DataSource) {}
-
   @Get()
   async getAllReservations(
     @Query('page') page?: number,
@@ -128,31 +113,10 @@ export class ReservationsController {
     @Query('status') status?: string,
   ) {
     try {
-      const qb = this.dataSource.getRepository(History).createQueryBuilder('res');
-      if (status) {
-        qb.andWhere('res.status = :status', { status });
-      }
-      qb.orderBy('res.createdAt', 'DESC');
-      
-      const parsedPage = page ? Number(page) : 1;
-      const parsedLimit = limit ? Number(limit) : 50;
-      qb.skip((parsedPage - 1) * parsedLimit).take(parsedLimit);
-
-      const [data, total] = await qb.getManyAndCount();
-
-      return {
-        data: data.map(item => ({
-          id: item.id,
-          inventory_id: item.inventoryId,
-          user_id: item.userId,
-          quantity: item.quantity,
-          status: item.status,
-          expires_at: item.expiresAt,
-          created_at: item.createdAt,
-          updated_at: item.updatedAt
-        })),
-        total
-      };
+      const response = await axios.get(`${GO_SERVICE}/reservations`, {
+        params: { page, limit, status },
+      });
+      return response.data;
     } catch (e: any) {
       console.error('Error fetching all reservations:', e);
       throw new HttpException(

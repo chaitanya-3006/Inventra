@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { SafeLock } from './safe-lock.entity';
 import { Inventory } from '../inventory/inventory.entity';
 import { User } from '../users/user.entity';
 import { EventsGateway } from '../events/events.gateway';
+import axios from 'axios';
+
+const GO_SERVICE = process.env.GO_SERVICE_URL || 'http://go-service:8081';
 
 @Injectable()
 export class SafeLockService {
@@ -15,7 +18,6 @@ export class SafeLockService {
     @InjectRepository(Inventory) private inventoryRepo: Repository<Inventory>,
     @InjectRepository(User) private userRepo: Repository<User>,
     private eventsGateway: EventsGateway,
-    private dataSource: DataSource,
   ) {}
 
   async findAll(page = 1, limit = 10, filters?: {
@@ -86,105 +88,59 @@ export class SafeLockService {
   }
 
   async lock(inventoryId: string, quantity: number, adminId: string, expiresAt?: string, permanent = false) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const inventory = await this.inventoryRepo.findOne({ where: { id: inventoryId } });
+    if (!inventory) throw new NotFoundException('Inventory item not found');
 
+    if (inventory.availableQuantity < quantity) {
+      throw new BadRequestException('Not enough available quantity');
+    }
+
+    let lockData: any;
     try {
-      const inventory = await queryRunner.manager
-        .createQueryBuilder(Inventory, 'inv')
-        .setLock('pessimistic_write')
-        .where('inv.id = :id', { id: inventoryId })
-        .getOne();
-
-      if (!inventory) {
-        throw new NotFoundException('Inventory item not found');
-      }
-
-      if (inventory.availableQuantity < quantity) {
-        throw new BadRequestException('Not enough available quantity');
-      }
-
-      inventory.lockedQuantity += quantity;
-      await queryRunner.manager.save(inventory);
-
-      const safeLock = queryRunner.manager.create(SafeLock, {
-        inventoryId,
-        adminId,
+      const resp = await axios.post(`${GO_SERVICE}/safe-lock`, {
+        inventory_id: inventoryId,
+        admin_id: adminId,
         quantity,
-        expiresAt: (!permanent && expiresAt) ? new Date(expiresAt) : null,
+        expires_at: expiresAt || null,
         permanent,
       });
-      const savedLock = await queryRunner.manager.save(safeLock);
-
-      await queryRunner.commitTransaction();
-
-      this.eventsGateway.emitSafeLockUpdate();
-      this.eventsGateway.emitInventoryUpdate();
-
-      return {
-        id: savedLock.id,
-        inventoryId: savedLock.inventoryId,
-        adminId: savedLock.adminId,
-        quantity: savedLock.quantity,
-        expiresAt: savedLock.expiresAt,
-        permanent: savedLock.permanent,
-        createdAt: savedLock.createdAt,
-      };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error('Failed to safe-lock', err);
-      throw err instanceof BadRequestException || err instanceof NotFoundException 
-        ? err 
-        : new BadRequestException('Failed to safe lock');
-    } finally {
-      await queryRunner.release();
+      lockData = resp.data;
+    } catch (e: any) {
+      this.logger.error('Failed to safe-lock in Go service', e);
+      throw new BadRequestException(e.response?.data?.error || 'Failed to safe lock');
     }
+
+    this.eventsGateway.emitSafeLockUpdate();
+    this.eventsGateway.emitInventoryUpdate();
+
+    return {
+      id: lockData.id,
+      inventoryId: lockData.inventory_id,
+      adminId: lockData.admin_id,
+      quantity: lockData.quantity,
+      expiresAt: lockData.expires_at,
+      permanent: lockData.permanent,
+      createdAt: lockData.created_at,
+    };
   }
 
   async unlock(id: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const safeLock = await this.safeLockRepo.findOne({ where: { id } });
+    if (!safeLock) throw new NotFoundException('Safe-lock not found');
 
     try {
-      const safeLock = await queryRunner.manager
-        .createQueryBuilder(SafeLock, 'lock')
-        .setLock('pessimistic_write')
-        .where('lock.id = :id', { id })
-        .getOne();
-
-      if (!safeLock) {
-        throw new NotFoundException('Safe-lock not found');
-      }
-
-      const inventory = await queryRunner.manager
-        .createQueryBuilder(Inventory, 'inv')
-        .setLock('pessimistic_write')
-        .where('inv.id = :id', { id: safeLock.inventoryId })
-        .getOne();
-
-      if (inventory) {
-        inventory.lockedQuantity = Math.max(0, inventory.lockedQuantity - safeLock.quantity);
-        await queryRunner.manager.save(inventory);
-      }
-
-      await queryRunner.manager.remove(safeLock);
-      await queryRunner.commitTransaction();
-
-      this.eventsGateway.emitSafeLockUpdate();
-      this.eventsGateway.emitInventoryUpdate();
-
-      return { released: true };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error('Failed to release lock', err);
-      throw err instanceof BadRequestException || err instanceof NotFoundException 
-        ? err 
-        : new BadRequestException('Failed to release lock');
-    } finally {
-      await queryRunner.release();
+      await axios.post(`${GO_SERVICE}/safe-lock/release`, {
+        lock_id: id,
+      });
+    } catch (e: any) {
+      this.logger.error('Failed to release lock in Go service', e);
+      throw new BadRequestException(e.response?.data?.error || 'Failed to release lock');
     }
+
+    this.eventsGateway.emitSafeLockUpdate();
+    this.eventsGateway.emitInventoryUpdate();
+
+    return { released: true };
   }
 }
 
