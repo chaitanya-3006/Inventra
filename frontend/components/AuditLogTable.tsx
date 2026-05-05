@@ -44,26 +44,29 @@ export default function AuditLogTable({ items }: Props) {
   };
 
   // Simplify the oldValue and newValue for display
-  const getDetails = (action: string, entityType: string, oldValue: any, newValue: any) => {
-    // In a real app, we would format this based on the action and entity type
-    // For now, we'll just show a simple string
-    if (action === 'Item Added' && entityType === 'Inventory') {
-      return `Added ${entityType} (ID: ${newValue?.id || 'N/A'})`;
+  const getDetails = (action: string, entityType: string, entityId: string, oldValue: any, newValue: any) => {
+    if (action === 'Item Added') {
+      return `Added ${entityType} (ID: ${entityId}): ${newValue?.name || ''} (SKU: ${newValue?.sku || ''}, Qty: ${newValue?.totalQuantity || ''})`;
     }
-    if (action === 'Item Deleted' && entityType === 'Inventory') {
-      return `Deleted ${entityType} (ID: ${oldValue?.id || 'N/A'})`;
+    if (action === 'Item Deleted') {
+      return `Deleted ${entityType} (ID: ${entityId}): ${oldValue?.name || ''} (SKU: ${oldValue?.sku || ''})`;
     }
-    if (action === 'Item Updated' && entityType === 'Inventory') {
-      return `Updated ${entityType} (ID: ${oldValue?.id || 'N/A'})`;
+    if (action === 'Item Updated') {
+      const changes = [];
+      if (oldValue?.name !== newValue?.name) changes.push(`Name: ${oldValue?.name || 'N/A'} -> ${newValue?.name || 'N/A'}`);
+      if (oldValue?.totalQuantity !== newValue?.totalQuantity) changes.push(`Qty: ${oldValue?.totalQuantity || 'N/A'} -> ${newValue?.totalQuantity || 'N/A'}`);
+      return `Updated ${entityType} (ID: ${entityId}). Changes: ${changes.join(', ')}`;
     }
-    if (action === 'Reservation Created' && entityType === 'Reservation') {
-      return `Created reservation for ${newValue?.quantity || 'N/A'} units of ${newValue?.inventoryName || 'N/A'}`;
+    if (action === 'Reservation Auto-Confirmed') {
+      return `Auto-Confirmed reservation (ID: ${entityId}) for ${newValue?.quantity || 'N/A'} units`;
     }
-    if (action === 'Reservation Canceled' && entityType === 'Reservation') {
-      return `Canceled reservation (ID: ${oldValue?.id || 'N/A'})`;
+    if (action === 'Reservation Updated') {
+      return `Updated reservation (ID: ${entityId}) status to ${newValue?.status || ''}`;
     }
-    // Default fallback
-    return `${action} on ${entityType}`;
+    if (action === 'Reservation Canceled') {
+      return `Canceled reservation (ID: ${entityId})`;
+    }
+    return `${action} on ${entityType} (ID: ${entityId})`;
   };
 
   const getActionBadge = (action: string) => {
@@ -115,7 +118,7 @@ export default function AuditLogTable({ items }: Props) {
                   {getActionBadge(log.action)}
                 </td>
                 <td className="px-6 py-3 text-left text-gray-300">
-                  {getDetails(log.action, log.entityType, log.oldValue, log.newValue)}
+                  {getDetails(log.action, log.entityType, log.entityId, log.oldValue, log.newValue)}
                 </td>
                 <td className="px-6 py-3 text-center text-gray-300">
                   {log.ipAddress}

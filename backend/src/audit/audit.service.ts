@@ -43,7 +43,7 @@ export class AuditService {
 
     if (filters?.search) {
       query.andWhere(
-        '(CAST(audit.entityId AS varchar) ILIKE :search OR CAST(audit.entityType AS varchar) ILIKE :search)',
+        '(CAST(audit.id AS varchar) ILIKE :search OR CAST(audit.entityId AS varchar) ILIKE :search OR CAST(audit.entityType AS varchar) ILIKE :search)',
         { search: `%${filters.search}%` }
       );
     }
@@ -57,7 +57,7 @@ export class AuditService {
     const formattedData = data.map(item => ({
       id: item.id,
       userId: item.userId,
-      userName: item.userId ? 'User' : 'System',
+      userName: item.userId ? 'admin' : 'System',
       userRole: 'Admin',
       action: item.action,
       entityType: item.entityType,
