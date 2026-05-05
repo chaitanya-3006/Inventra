@@ -18,14 +18,14 @@ type Inventory struct {
 }
 
 type Reservation struct {
-	ID          uuid.UUID `json:"id"`
-	InventoryID uuid.UUID `json:"inventory_id"`
-	UserID      uuid.UUID `json:"user_id"`
-	Quantity    int       `json:"quantity"`
-	Status      string    `json:"status"`
+	ID          uuid.UUID  `json:"id"`
+	InventoryID uuid.UUID  `json:"inventory_id"`
+	UserID      uuid.UUID  `json:"user_id"`
+	Quantity    int        `json:"quantity"`
+	Status      string     `json:"status"`
 	ExpiresAt   *time.Time `json:"expires_at"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	CreatedAt   *time.Time `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at"`
 }
 
 type SafeLock struct {

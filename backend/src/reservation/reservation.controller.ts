@@ -94,9 +94,9 @@ export class ReservationController {
       );
       return response.data;
     } catch (e: any) {
-      console.error('Error fetching user reservations:', e);
+      console.error('Error fetching user reservations:', e.message, e.response?.data);
       throw new HttpException(
-        'Could not fetch reservations',
+        { message: 'Could not fetch reservations', error: e.message, details: e.response?.data },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -118,9 +118,9 @@ export class ReservationsController {
       });
       return response.data;
     } catch (e: any) {
-      console.error('Error fetching all reservations:', e);
+      console.error('Error fetching all reservations:', e.message, e.response?.data);
       throw new HttpException(
-        'Could not fetch reservations',
+        { message: 'Could not fetch reservations', error: e.message, details: e.response?.data },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
